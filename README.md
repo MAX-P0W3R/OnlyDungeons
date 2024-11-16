@@ -1,0 +1,1 @@
+Solo dungeon quest. Navigate the deep unknown to discover six monsters that are hiding their riches. Defeat each monster to take their loot. One will be holding the key to the final boss lair. You will have 30 rounds to score as high as possible. Good luck!
