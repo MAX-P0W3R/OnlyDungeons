@@ -1,33 +1,96 @@
 import os
+
+from colorama import Fore, Back, Style, init
+
 #from PIL import Image
 
 # Show map
 #img = Image.open('Map.png')
 #img.show()
+init()
 
 # Display the start menu.
 def prompt():
-    print("\t\t\tWelcome to the Dungeon\n\n"
-        "You must collect all six treasures from each enemy to defeat the final Boss.\n"
-        "Movement:\t'go {direction}' (travel north,south,east,or west)\n"
-        "\t'get {item}' (add nearby item to inventory)\n")
+    print(Fore.GREEN + "\t\tWelcome to OnlyDungeons!\n\n\
+        Objective: In todays dungeon you will adventure deep into the Unknown void to attempt\n\
+        to defeat your foes, destroy their lairs, and loot their treasure hordes. You will need\n\
+        a lucky roll of the dice and a bit of cunning.\n\n\
+        You must defeat all six enemies to collect their treasure. One will possess the key\n\
+        to unlock the final chamber.\n\
+        You must find each enemy lair, slay the enemy, loot any treasure and escape the dungeon.\n\
+        You will have 30 rounds to fulfill your quest. Good luck!\n\n\
+        \tHere's a few tips to help you on your way:\n\
+        Roll the Dice: 'roll' This will roll four D6(six sided dice).\n\
+        Movement: 'go {direction}' Travel north,south,east,or west.\n\
+        Collect items from a room: 'get {item}': Add nearby item to inventory.\n\
+        Have a look around: 'look' To see the room description.\n\
+        Attack: 'attack {enemy}' Any enemy within range may be attacked.\n\n\
+        \tTo leave the game at any time type EXIT")
 
-    input("Press any key to continue ... ")
+    input("\t\tPress any key to continue ...\n")
+
 
 # Clear the terminal.
 def clear():
-    os.system('cls' if os.name == 'nt' else 'clear')
+    try:
+        os.system('cls' if os.name == 'nt' else 'clear')
+    except Exception as e:
+        print("\n" * 50)
 
 # Map
 rooms = {
-    'Liminal Space' : {'North':'Mirror Maze','South':'Bat Cavern'},
-    'Mirror Maze' : {'South':'Liminal Space','Item':'Crystal'},
-    'Bat Cavern' : {'North':'Liminal Space','East':'Great Hall','Item':'Staff'},
-    'Great Hall' : {'West':'Bat Cavern','Enemy':'Goblin'},
-    'Bazaar' : {'West':'Liminal Space','North':'Location Four','East':'Location Six','Item':'Skull'},
-    'Location Four' : {'South':'Bazaar','East':'Location Five','Enemy':'Brigand'},
-    'Location Five' : {'West':'Location Four','Enemy':'Ghoul'},
-    'Location Six' : {'East':'Bazaar','Enemy':'Final Boss'}
+    'Liminal Space': {
+        'North':'Mirror Maze',
+        'South':'Bat Cavern',
+        'East':'Bazaar',
+        'Description':'Starting point. Grand entrance'
+    },
+    'Mirror Maze': {
+        'South':'Liminal Space',
+        'Item':'Crystal',
+        'Description':'A room full of dusty mirrors!',
+        'Enemy':'Ghoull'
+    },
+    'Bat Cavern': {
+        'North':'Liminal Space',
+        'East':'Great Hall',
+        'Item':'Staff',
+        'Description':'BAts! Everywhere! We are in bat country!',
+        'Enemy':'Ghost'
+    },
+    'Great Hall': {
+        'West':'Bat Cavern',
+        'Item':'Sword',
+        'Description':'The Great Hall location description.',
+        'Enemy':'Goblin'
+    },
+    'Bazaar': {
+        'West':'Liminal Space',
+        'North':'Location Four',
+        'East':'Location Six',
+        'Item':'Skull',
+        'Description':'The bazaar location description.',
+        'Enemy':'Vampire'
+    },
+    'Location Four': {
+        'South':'Bazaar',
+        'East':'Location Five',
+        'Item':'',
+        'Description':'The four location description.',
+        'Enemy':'Brigand'
+    },
+    'Location Five': {
+        'West':'Location Four',
+        'Item':'',
+        'Description':'The fifth location description.',
+        'Enemy':'Ghoul'
+    },
+    'Location Six': {
+        'East':'Bazaar',
+        'Item':'Treasure Chest',
+        'Description':'The sixth location description.',
+        'Enemy':'Final Boss'
+    }
     }
 
 # List of Vowels
@@ -45,14 +108,13 @@ msg = ""
 clear()
 prompt()
 
-
 # Gameplay Loop
 while True:
 
     clear()
 
     # Display info player
-    print(f"You are in {current_room}\nInventory : {inventory}\n{'-' * 27}")
+    print(f"You are in {current_room}\nInventory : {inventory}\n{'~' * 27}")
 
     # Dispaly msg
     print(msg)
@@ -75,8 +137,6 @@ while True:
             # Singular starts with consanent
             else:
                 print(f"You see a {nearby_item}")
-
-# Enemy encounter -- TO DO
 
     # Accept player input for move
     user_input = input("Enter your move: \n")
@@ -103,7 +163,7 @@ while True:
 
         except:
             msg = f"You can't go that way."
-
+ 
     # Picking up items
     elif action == "Get":
 
@@ -125,11 +185,45 @@ while True:
             msg = f"Can't find {item}."
 
     # Add Look action
+    elif action == "Look":
+        # Get room description
+        description = rooms[current_room].get("Description", "You see nothing special here.")
+
+        # Get Exits
+        exits = [key for key in rooms[current_room].keys() if key not in ["Item", "Enemy", "Description"]]
+        exit_str = ", ".join(exits)
+
+        # Add description to mesaage.
+        msg = f"{description}\nExits: {exit_str}"
+
+        # Add item deets if present.
+        if "Item" in rooms[current_room]:
+            item = rooms[current_room]["Item"]
+            msg += f"\nItem: {item}"
+
+        # Add enemy deets if present.
+        if "Enemy" in rooms[current_room]:
+            enemy = rooms[current_room]["Enemy"]
+            msg += f"\nEnemy: {enemy}"
 
     # Add Attack action
+    elif action == "Attack":
+        try:
+            if "Enemy" in rooms[current_room]:
+                enemy = rooms[current_room]["Enemy"]
+                msg = f"You attack the {enemy}! It's defeated!"
+                # Remove enemy after attack
+                del rooms[current_room]["Enemy"]
+            else:
+                msg = "No enemy here to attack."
+        except:
+            msg = "Attack failed."
 
     # Add random dice roll
-
+    elif action == "Roll":
+        import random
+        rolls = [random.randint(1, 6) for _ in range(4)]
+        msg = f"Dice Rolls: {', '.join(map(str, rolls))}"
     # Exit game
     elif action == "Exit":
         break
@@ -151,26 +245,8 @@ while True:
 #    print("Lame. You have died at the gates of the unknown...")
 #    quit()
 
-#if mainMenu == 'rules':
-#    print("Objective: In todays dungeon you will adventure deep into the Unknown void to attempt")
-#    print("to defeat your foes, destroy their lairs, and loot their treasure hordes. You will need")
-#    print("a lucky roll of the dice and a bit of cunning.")
-
 #elif mainMenu == 'begin':
-    # Introduce heroes.
-#    print("Let's meet your party:")
-#    print('')
-#   print('Hero #1: Watchman')
-#    print('Health: 5')
-#    print('Power: 3')
-#    print('')
-#    print('Hero #1: Assassin')
-#    print('Health: 4')
-#    print('Power: 4')
-#    print('')
-#    print('Hero #1: Alchemist')
-#    print('Health: 3')
-#    print('Power: 5')
+
 
 #else:
 #    print('Invalid response!')
