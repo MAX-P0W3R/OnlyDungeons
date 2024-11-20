@@ -1,12 +1,9 @@
 import os
+import random
 
 from colorama import Fore, Back, Style, init
 
-#from PIL import Image
 
-# Show map
-#img = Image.open('Map.png')
-#img.show()
 init()
 
 # Display the start menu.
@@ -37,6 +34,42 @@ def clear():
     except Exception as e:
         print("\n" * 50)
 
+# Define dice roll D6 & Combat function
+def roll_d6():
+    return random.randint(1,6)
+
+def combat(player, enemy_name):
+    enemy = enemies[enemy_name]
+    print(f"\nYou encounter a {enemy_name}!")
+    print(f"Your Health: {player['Health']} | Enemy Health: {enemy['Health']}")
+
+    while player["Health"] > 0 and enemy["Health"] > 0:
+        # Players attack
+        input("Press enter to roll for your attack...")
+        player_roll = roll_d6()
+        player_damage = player_roll * player["Strength"]
+        enemy["Health"] -= player_damage
+        print(f"You rolled {player_roll}! You deal {player_damage} damage.")
+
+        if enemy["Health"] <= 0:
+            print(f"You have defeated the {enemy_name}!")
+            return True # Player wins!
+
+        # Enemy's attack
+        input(f"The {enemy_name} attacks! Press enter to roll for defense...")
+        enemy_roll = roll_d6()
+        enemy_damage = enemy_roll * enemy["Strength"]
+        player["Health"] -= enemy_damage
+        print(f"The {enemy_name} rolled {enemy_roll}! It deals {enemy_damage} damage.")
+
+        if player["Health"] <=0:
+            print(f"You have been defeated! Game over...")
+            return False # Enemy wins
+
+        # Show updated health
+        print(f"\nYour Health: {player['Health']} | {enemy_name}'s Health: {enemy['Health']}'")
+
+
 # Map
 rooms = {
     'Liminal Space': {
@@ -49,52 +82,77 @@ rooms = {
         'South':'Liminal Space',
         'Item':'Crystal',
         'Description':'A room full of dusty mirrors!',
-        'Enemy':'Ghoull'
+        'Enemy':'Ghoul | {2/3}',
+        'EnemyHealth':'2',
+        'EnemyStrength':'3'
     },
     'Bat Cavern': {
         'North':'Liminal Space',
         'East':'Great Hall',
         'Item':'Staff',
-        'Description':'BAts! Everywhere! We are in bat country!',
+        'Description':'BATS! Everywhere! We are in bat country!',
         'Enemy':'Ghost'
     },
     'Great Hall': {
         'West':'Bat Cavern',
         'Item':'Sword',
-        'Description':'The Great Hall location description.',
+        'Description':'The Great Hall is dimly lit by candles placed on stone shelves around the perimeter.'
+        'You see a Goblin seated on large stone slab. He\'s seen you and you make eye contact.',
         'Enemy':'Goblin'
     },
     'Bazaar': {
         'West':'Liminal Space',
-        'North':'Location Four',
-        'East':'Location Six',
+        'North':'Pit of Pendulums',
+        'East':'The Rotten Temlpe Room',
         'Item':'Skull',
         'Description':'The bazaar location description.',
         'Enemy':'Vampire'
     },
-    'Location Four': {
+    'Pit Of Pendulums': {
         'South':'Bazaar',
-        'East':'Location Five',
+        'East':'Tomb of the Forgotten',
         'Item':'',
-        'Description':'The four location description.',
+        'Description':'The location description.',
         'Enemy':'Brigand'
     },
-    'Location Five': {
-        'West':'Location Four',
-        'Item':'',
-        'Description':'The fifth location description.',
-        'Enemy':'Ghoul'
+    'Tomb of the Forgotten': {
+        'West':'Pit Of Pendulums',
+        'Item':'Sword',
+        'Description':'The location description.',
+        'Enemy':'Black Cat'
     },
-    'Location Six': {
+    'The Rotten Temlpe Room': {
         'East':'Bazaar',
         'Item':'Treasure Chest',
-        'Description':'The sixth location description.',
+        'Description':'The location description.',
         'Enemy':'Final Boss'
     }
     }
 
+# Player and Enemy stats
+player = {
+    "Health": 20,
+    "Strength": 5
+    }
+
+enemies = {
+    "Goblin": {"Health":5, "Strength":2},
+    "Brigand": {"Health":5, "Strength":3},
+    "Ghoul": {"Health":5, "Strength":3},
+    "Black Cat": {"Health":5, "Strength":3},
+    "Vampire": {"Health":5, "Strength":3},
+    "Fianl Boss": {"Health":5, "Strength":3},
+    }
+
+
 # List of Vowels
 vowels = ['a', 'e', 'i', 'o', 'u']
+
+# Health
+health = 5
+
+# Strength
+strength = 5
 
 # List to track inventory
 inventory = []
@@ -114,7 +172,7 @@ while True:
     clear()
 
     # Display info player
-    print(f"You are in {current_room}\nInventory : {inventory}\n{'~' * 27}")
+    print(f"You are in {current_room}\nHealth: {health}\nStrength: {strength}\nInventory : {inventory}\n{'~' * 27}")
 
     # Dispaly msg
     print(msg)
@@ -208,16 +266,16 @@ while True:
 
     # Add Attack action
     elif action == "Attack":
-        try:
-            if "Enemy" in rooms[current_room]:
-                enemy = rooms[current_room]["Enemy"]
-                msg = f"You attack the {enemy}! It's defeated!"
-                # Remove enemy after attack
-                del rooms[current_room]["Enemy"]
+        if "Enemy" in rooms[current_room]:
+            enemy_name = rooms[current_room]["Enemy"]
+            victory = combat(player, enemy_name)
+            if victory:
+                del rooms[current_room]["Enemy"]  # Remove defeated enemy
             else:
-                msg = "No enemy here to attack."
-        except:
-            msg = "Attack failed."
+                print("Game Over!")
+                break
+        else:
+            print("No enemy here to attack.")
 
     # Add random dice roll
     elif action == "Roll":
