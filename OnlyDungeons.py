@@ -8,21 +8,17 @@ init()
 
 # Display the start menu.
 def prompt():
-    print(Fore.GREEN + "\t\tWelcome to OnlyDungeons!\n\n\
-        Objective: In todays dungeon you will adventure deep into the Unknown void to attempt\n\
-        to defeat your foes, destroy their lairs, and loot their treasure hordes. You will need\n\
-        a lucky roll of the dice and a bit of cunning.\n\n\
-        You must defeat all six enemies to collect their treasure. One will possess the key\n\
-        to unlock the final chamber.\n\
-        You must find each enemy lair, slay the enemy, loot any treasure and escape the dungeon.\n\
-        You will have 30 rounds to fulfill your quest. Good luck!\n\n\
-        \tHere's a few tips to help you on your way:\n\
-        Roll the Dice: 'roll' This will roll four D6(six sided dice).\n\
-        Movement: 'go {direction}' Travel north,south,east,or west.\n\
-        Collect items from a room: 'get {item}': Add nearby item to inventory.\n\
-        Have a look around: 'look' To see the room description.\n\
-        Attack: 'attack {enemy}' Any enemy within range may be attacked.\n\n\
-        \tTo leave the game at any time type EXIT")
+    print(Fore.GREEN + "\t\tWelcome, brave adventurer!\n\n\
+You stand at the threshold of the forgotten dungeon, a labyrinth of peril and mystery.\n\
+Whispers speak of untold treasures guarded by ancient foes, each more deadly than the last.\n\
+To claim victory, you must gather six legendary artifacts, hidden deep within the dungeon, each\n\
+guarded by fearsome enemies.\n\n\
+Your journey will test your courage, strategy, and skill. Armed with nothing but your wits, your dice,\n\
+and your resolve, you must navigate through treacherous rooms, face off against monstrous enemies, and\n\
+unearth the secrets of the dungeon.\n\n\
+Roll the dice, make your move, and choose your actions wisely. Will you emerge victorious, or will the\n\
+dungeon claim yet another soul?\n\n\
+The dungeon awaits... let the adventure begin!\n")
 
     input("\t\tPress any key to continue ...\n")
 
@@ -82,7 +78,7 @@ rooms = {
         'South':'Liminal Space',
         'Item':'Crystal',
         'Description':'A room full of dusty mirrors!',
-        'Enemy':'Ghoul | {2/3}',
+        'Enemy':'Ghoul',
         'EnemyHealth':'2',
         'EnemyStrength':'3'
     },
@@ -90,7 +86,7 @@ rooms = {
         'North':'Liminal Space',
         'East':'Great Hall',
         'Item':'Staff',
-        'Description':'BATS! Everywhere! We are in bat country!',
+        'Description':'BATS! Everywhere! You are in bat country!',
         'Enemy':'Ghost'
     },
     'Great Hall': {
