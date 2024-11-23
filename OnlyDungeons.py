@@ -8,15 +8,15 @@ init()
 
 # Display the start menu.
 def prompt():
-    print(Fore.GREEN + "\t\tWelcome, brave adventurer!\n\n\
-You stand at the threshold of the forgotten dungeon, a labyrinth of peril and mystery.\n\
+    print(Fore.GREEN + "\t\tWelcome, Brave Adventurer!\n\n\
+\tYou stand at the threshold of the forgotten dungeon, a labyrinth of peril and mystery.\n\
 Whispers speak of untold treasures guarded by ancient foes, each more deadly than the last.\n\
 To claim victory, you must gather six legendary artifacts, hidden deep within the dungeon, each\n\
 guarded by fearsome enemies.\n\n\
-Your journey will test your courage, strategy, and skill. Armed with nothing but your wits, your dice,\n\
+\tYour journey will test your courage, strategy, and skill. Armed with nothing but your wits, your dice,\n\
 and your resolve, you must navigate through treacherous rooms, face off against monstrous enemies, and\n\
 unearth the secrets of the dungeon.\n\n\
-Roll the dice, make your move, and choose your actions wisely. Will you emerge victorious, or will the\n\
+\tRoll the dice, make your move, and choose your actions wisely. Will you emerge victorious, or will the\n\
 dungeon claim yet another soul?\n\n\
 The dungeon awaits... let the adventure begin!\n")
 
@@ -34,37 +34,55 @@ def clear():
 def roll_d6():
     return random.randint(1,6)
 
-def combat(player, enemy_name):
-    enemy = enemies[enemy_name]
+# Combat description and mechanics
+def combat(player, enemy_name, current_room):
+    if "Enemy" not in rooms[current_room]:
+        print(f"No enemy named {enemy_name} is present in this room.")
+        return False
+
+    enemy = rooms[current_room]["Enemy"]
     print(f"\nYou encounter a {enemy_name}!")
     print(f"Your Health: {player['Health']} | Enemy Health: {enemy['Health']}")
 
     while player["Health"] > 0 and enemy["Health"] > 0:
-        # Players attack
-        input("Press enter to roll for your attack...")
+        # Player's attack
+        input("Press Enter to roll for your attack...")
         player_roll = roll_d6()
         player_damage = player_roll * player["Strength"]
         enemy["Health"] -= player_damage
         print(f"You rolled {player_roll}! You deal {player_damage} damage.")
 
         if enemy["Health"] <= 0:
-            print(f"You have defeated the {enemy_name}!")
-            return True # Player wins!
+            print(f"You defeated the {enemy_name}!")
+
+            # Add room item to inventory, if present
+            if "Item" in rooms[current_room]:
+                item = rooms[current_room]["Item"]
+                if item not in inventory:
+                    inventory.append(item)
+                    print(f"You found and collected the {item}!")
+
+            # Safely remove the enemy
+            if "Enemy" in rooms[current_room]:
+                del rooms[current_room]["Enemy"]
+
+            return True  # Player wins
 
         # Enemy's attack
-        input(f"The {enemy_name} attacks! Press enter to roll for defense...")
+        input(f"The {enemy_name} attacks! Press Enter to roll for defense...")
         enemy_roll = roll_d6()
         enemy_damage = enemy_roll * enemy["Strength"]
         player["Health"] -= enemy_damage
         print(f"The {enemy_name} rolled {enemy_roll}! It deals {enemy_damage} damage.")
 
-        if player["Health"] <=0:
-            print(f"You have been defeated! Game over...")
-            return False # Enemy wins
+        if player["Health"] <= 0:
+            print("You have been defeated! Game over.")
+            return False  # Enemy wins
 
         # Show updated health
-        print(f"\nYour Health: {player['Health']} | {enemy_name}'s Health: {enemy['Health']}'")
+        print(f"\nYour Health: {player['Health']} | {enemy_name}'s Health: {enemy['Health']}")
 
+    return False  # Default fail-safe
 
 # Map
 rooms = {
@@ -78,7 +96,7 @@ rooms = {
         'South':'Liminal Space',
         'Item':'Crystal',
         'Description':'A room full of dusty mirrors!',
-        'Enemy':'Ghoul',
+        'Enemy':{'Name': 'Ghoul', 'Health':11, 'Strength': 3},
         'EnemyHealth':'2',
         'EnemyStrength':'3'
     },
@@ -168,7 +186,7 @@ while True:
     clear()
 
     # Display info player
-    print(f"You are in {current_room}\nHealth: {health}\nStrength: {strength}\nInventory : {inventory}\n{'~' * 27}")
+    print(f"You are in {current_room}\nHealth: {health}\nStrength: {strength}\nInventory : {inventory}\n{'--' * 17}")
 
     # Dispaly msg
     print(msg)
@@ -243,6 +261,9 @@ while True:
         # Get room description
         description = rooms[current_room].get("Description", "You see nothing special here.")
 
+        # Get item description if present.
+
+
         # Get Exits
         exits = [key for key in rooms[current_room].keys() if key not in ["Item", "Enemy", "Description"]]
         exit_str = ", ".join(exits)
@@ -250,21 +271,19 @@ while True:
         # Add description to mesaage.
         msg = f"{description}\nExits: {exit_str}"
 
-        # Add item deets if present.
-        if "Item" in rooms[current_room]:
-            item = rooms[current_room]["Item"]
-            msg += f"\nItem: {item}"
-
-        # Add enemy deets if present.
+        # Add enemy description if present.
         if "Enemy" in rooms[current_room]:
             enemy = rooms[current_room]["Enemy"]
-            msg += f"\nEnemy: {enemy}"
+            enemy_name = enemy["Name"]
+            enemy_health = enemy["Health"]
+            enemy_strength = enemy["Strength"]
+            msg += f"\nEnemy: {enemy_name} {enemy_health}/{enemy_strength}"
 
     # Add Attack action
     elif action == "Attack":
         if "Enemy" in rooms[current_room]:
-            enemy_name = rooms[current_room]["Enemy"]
-            victory = combat(player, enemy_name)
+            enemy = rooms[current_room]["Enemy"]
+            victory = combat(player, enemy["Name"], current_room)
             if victory:
                 del rooms[current_room]["Enemy"]  # Remove defeated enemy
             else:
