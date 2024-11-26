@@ -196,19 +196,19 @@ while True:
 
         nearby_item = rooms[current_room]["Item"]
 
-        if nearby_item not in inventory:
+        # if nearby_item not in inventory:
 
-            # Plural
-            if nearby_item[-1] == 's':
-                print(f"You see {nearby_item}")
+        #     # Plural
+        #     if nearby_item[-1] == 's':
+        #         print(f"You see {nearby_item}")
 
-            # Singular starts with vowel
-            elif nearby_item[0] in vowels:
-                print(f"You see an {nearby_item}")
+        #     # Singular starts with vowel
+        #     elif nearby_item[0] in vowels:
+        #         print(f"You see an {nearby_item}")
 
-            # Singular starts with consanent
-            else:
-                print(f"You see a {nearby_item}")
+        #     # Singular starts with consanent
+        #     else:
+        #         print(f"You see a {nearby_item}")
 
     # Accept player input for move
     user_input = input("Enter your move: \n")
