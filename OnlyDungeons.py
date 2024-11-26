@@ -97,22 +97,20 @@ rooms = {
         'Item':'Crystal',
         'Description':'A room full of dusty mirrors!',
         'Enemy':{'Name': 'Ghoul', 'Health':11, 'Strength': 3},
-        'EnemyHealth':'2',
-        'EnemyStrength':'3'
     },
     'Bat Cavern': {
         'North':'Liminal Space',
         'East':'Great Hall',
         'Item':'Staff',
         'Description':'BATS! Everywhere! You are in bat country!',
-        'Enemy':'Ghost'
+        'Enemy':{'Name': 'Ghost', 'Health':12, 'Strength': 4},
     },
     'Great Hall': {
         'West':'Bat Cavern',
         'Item':'Sword',
         'Description':'The Great Hall is dimly lit by candles placed on stone shelves around the perimeter.'
         'You see a Goblin seated on large stone slab. He\'s seen you and you make eye contact.',
-        'Enemy':'Goblin'
+        'Enemy':{'Name': 'Goblin', 'Health':12, 'Strength': 4},
     },
     'Bazaar': {
         'West':'Liminal Space',
@@ -120,33 +118,41 @@ rooms = {
         'East':'The Rotten Temlpe Room',
         'Item':'Skull',
         'Description':'The bazaar location description.',
-        'Enemy':'Vampire'
+        'Enemy':{'Name': 'Vampire', 'Health': 0, 'Strength': 0},
     },
     'Pit Of Pendulums': {
         'South':'Bazaar',
         'East':'Tomb of the Forgotten',
-        'Item':'',
+        'Item':'NULL',
         'Description':'The location description.',
-        'Enemy':'Brigand'
+        'Enemy':{'Name': 'Brigand', 'Health': 0, 'Strength': 0},
     },
     'Tomb of the Forgotten': {
         'West':'Pit Of Pendulums',
         'Item':'Sword',
         'Description':'The location description.',
-        'Enemy':'Black Cat'
+        'Enemy':{'Name': 'Black Cat', 'Health': 0, 'Strength': 0},
     },
     'The Rotten Temlpe Room': {
         'East':'Bazaar',
         'Item':'Treasure Chest',
         'Description':'The location description.',
-        'Enemy':'Final Boss'
+        'Enemy':{'Name': 'The Final Boss', 'Health': 0, 'Strength': 0},
     }
     }
+
+
+# Initialize enemy stats
+for room, details in rooms.items():
+    if 'Enemy' in details:
+        details['Enemy']['Health'] = roll_d6()
+        details['Enemy']['Strength'] = roll_d6()
+
 
 # Player and Enemy stats
 player = {
     "Health": 20,
-    "Strength": 5
+    "Strength": 6
     }
 
 enemies = {
@@ -161,12 +167,6 @@ enemies = {
 
 # List of Vowels
 vowels = ['a', 'e', 'i', 'o', 'u']
-
-# Health
-health = 5
-
-# Strength
-strength = 5
 
 # List to track inventory
 inventory = []
@@ -186,7 +186,7 @@ while True:
     clear()
 
     # Display info player
-    print(f"You are in {current_room}\nHealth: {health}\nStrength: {strength}\nInventory : {inventory}\n{'--' * 17}")
+    print(f"You are in {current_room}\nHealth: {player['Health']}\nStrength: {player['Strength']}\nInventory : {inventory}\n{'--' * 17}")
 
     # Dispaly msg
     print(msg)
@@ -274,21 +274,20 @@ while True:
         # Add enemy description if present.
         if "Enemy" in rooms[current_room]:
             enemy = rooms[current_room]["Enemy"]
-            enemy_name = enemy["Name"]
-            enemy_health = enemy["Health"]
-            enemy_strength = enemy["Strength"]
-            msg += f"\nEnemy: {enemy_name} {enemy_health}/{enemy_strength}"
+            if isinstance(enemy, dict):
+                enemy_name = enemy["Name"]
+                enemy_health = enemy["Health"]
+                enemy_strength = enemy["Strength"]
+                msg += f"\nEnemy: {enemy_name} {enemy_health}/{enemy_strength}"
 
     # Add Attack action
     elif action == "Attack":
         if "Enemy" in rooms[current_room]:
             enemy = rooms[current_room]["Enemy"]
             victory = combat(player, enemy["Name"], current_room)
-            if victory:
-                del rooms[current_room]["Enemy"]  # Remove defeated enemy
-            else:
-                print("Game Over!")
-                break
+#           if victory:
+#                del rooms[current_room]["Enemy"]  # Remove defeated enemy
+       
         else:
             print("No enemy here to attack.")
 
@@ -303,26 +302,3 @@ while True:
 
     else:
         msg = "Invalid Command"
-
-
-
-
-################################
-#name = input('Enter your name: ')
-#print(f'Greetings {name}! Welcome to the Dungeon!')
-#start = input('Would you like to enter the Dungeon or quit and die? ')
-#if start == 'enter':
-#    print("Great! Let's get on with the adventure!")
-#    mainMenu = input('Would you like to read the Rules or Begin the adventure? ')
-#else:
-#    print("Lame. You have died at the gates of the unknown...")
-#    quit()
-
-#elif mainMenu == 'begin':
-
-
-#else:
-#    print('Invalid response!')
-#    quit()
-
-
