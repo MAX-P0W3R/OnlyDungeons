@@ -177,6 +177,13 @@ current_room = "Liminal Space"
 # Result of last move
 msg = ""
 
+# Initialize the round number
+round_number = 1  # Start at round 1
+
+# Total rounds in the game
+total_rounds = 30
+
+
 clear()
 prompt()
 
@@ -186,7 +193,7 @@ while True:
     clear()
 
     # Display info player
-    print(f"You are in {current_room}\nHealth: {player['Health']}\nStrength: {player['Strength']}\nInventory : {inventory}\n{'--' * 17}")
+    print(f"You are in {current_room}\nRound: {round_number}/{total_rounds}\nHealth: {player['Health']}\nStrength: {player['Strength']}\nInventory : {inventory}\n{'--' * 17}")
 
     # Dispaly msg
     print(msg)
@@ -231,7 +238,7 @@ while True:
 
         try:
             current_room = rooms[current_room][direction]
-            msg = f"You have traveled {direction}."
+            msg = f"You have traveled {direction} to the {current_room}."
 
         except:
             msg = f"You can't go that way."
@@ -291,14 +298,25 @@ while True:
         else:
             print("No enemy here to attack.")
 
+    # Increment the round number after the action
+    round_number += 1
+
+    # You can also check if the player has completed the game or lost
+    if round_number > total_rounds:
+        print("Game over! You've completed all 30 rounds.")
+        break
+
     # Add random dice roll
     elif action == "Roll":
         import random
         rolls = [random.randint(1, 6) for _ in range(4)]
         msg = f"Dice Rolls: {', '.join(map(str, rolls))}"
+
     # Exit game
     elif action == "Exit":
         break
+
+    # Help commands
 
     else:
         msg = "Invalid Command"
