@@ -226,12 +226,19 @@ while True:
     # First word is action
     action = next_move[0].title()
 
+    # Increment the round number after the action
+    round_number += 1
+
     if len(next_move) > 1:
         item = next_move[1:]
         direction = next_move[1].title()
 
         item = ' '.join(item).title()
 
+    # You can also check if the player has completed the game or lost
+    if round_number > total_rounds:
+        print("Game over! You've completed all 30 rounds.")
+        break
 
     # Moving between rooms
     if action == "Go":
@@ -297,14 +304,6 @@ while True:
        
         else:
             print("No enemy here to attack.")
-
-    # Increment the round number after the action
-    round_number += 1
-
-    # You can also check if the player has completed the game or lost
-    if round_number > total_rounds:
-        print("Game over! You've completed all 30 rounds.")
-        break
 
     # Add random dice roll
     elif action == "Roll":
