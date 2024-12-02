@@ -22,7 +22,6 @@ The dungeon awaits... let the adventure begin!\n")
 
     input("\t\tPress any key to continue ...\n")
 
-
 # Clear the terminal.
 def clear():
     try:
@@ -96,21 +95,21 @@ rooms = {
         'South':'Liminal Space',
         'Item':'Crystal',
         'Description':'A room full of dusty mirrors!',
-        'Enemy':{'Name': 'Ghoul', 'Health':11, 'Strength': 3},
+        'Enemy':{'Name': 'Ghoul', 'Health':10, 'Strength': 0},
     },
     'Bat Cavern': {
         'North':'Liminal Space',
         'East':'Great Hall',
         'Item':'Staff',
         'Description':'BATS! Everywhere! You are in bat country!',
-        'Enemy':{'Name': 'Ghost', 'Health':12, 'Strength': 4},
+        'Enemy':{'Name': 'Ghost', 'Health':0, 'Strength': 0},
     },
     'Great Hall': {
         'West':'Bat Cavern',
         'Item':'Sword',
         'Description':'The Great Hall is dimly lit by candles placed on stone shelves around the perimeter.'
         'You see a Goblin seated on large stone slab. He\'s seen you and you make eye contact.',
-        'Enemy':{'Name': 'Goblin', 'Health':12, 'Strength': 4},
+        'Enemy':{'Name': 'Goblin', 'Health':0, 'Strength': 0},
     },
     'Bazaar': {
         'West':'Liminal Space',
@@ -123,13 +122,13 @@ rooms = {
     'Pit Of Pendulums': {
         'South':'Bazaar',
         'East':'Tomb of the Forgotten',
-        'Item':'NULL',
+        'Item':'Glass Eye of Mystery',
         'Description':'The location description.',
         'Enemy':{'Name': 'Brigand', 'Health': 0, 'Strength': 0},
     },
     'Tomb of the Forgotten': {
         'West':'Pit Of Pendulums',
-        'Item':'Sword',
+        'Item':'Heavy Shield',
         'Description':'The location description.',
         'Enemy':{'Name': 'Black Cat', 'Health': 0, 'Strength': 0},
     },
@@ -151,18 +150,18 @@ for room, details in rooms.items():
 
 # Player and Enemy stats
 player = {
-    "Health": 20,
-    "Strength": 6
+    "Health": 5,
+    "Strength": 5
     }
 
-enemies = {
-    "Goblin": {"Health":5, "Strength":2},
-    "Brigand": {"Health":5, "Strength":3},
-    "Ghoul": {"Health":5, "Strength":3},
-    "Black Cat": {"Health":5, "Strength":3},
-    "Vampire": {"Health":5, "Strength":3},
-    "Fianl Boss": {"Health":5, "Strength":3},
-    }
+# enemies = {
+#     "Goblin": {"Health":5, "Strength":2},
+#     "Brigand": {"Health":5, "Strength":3},
+#     "Ghoul": {"Health":5, "Strength":3},
+#     "Black Cat": {"Health":5, "Strength":3},
+#     "Vampire": {"Health":5, "Strength":3},
+#     "Fianl Boss": {"Health":5, "Strength":3},
+#     }
 
 
 # List of Vowels
@@ -193,7 +192,8 @@ while True:
     clear()
 
     # Display info player
-    print(f"You are in {current_room}\nRound: {round_number}/{total_rounds}\nHealth: {player['Health']}\nStrength: {player['Strength']}\nInventory : {inventory}\n{'--' * 17}")
+    print(f"You are in {current_room}\nRound: {round_number}/{total_rounds}\nHealth: {player['Health']}\n\
+    Strength: {player['Strength']}\nLoot: {inventory}\n{'--' * 17}")
 
     # Dispaly msg
     print(msg)
