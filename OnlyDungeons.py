@@ -6,6 +6,11 @@ from colorama import Fore, Back, Style, init
 
 init()
 
+# Display main menu.
+def mainMenu():
+    print(Fore.GREEN + "1. List\n\
+    2. List")
+
 # Display the start menu.
 def prompt():
     print(Fore.GREEN + "\t\tWelcome, Brave Adventurer!\n\n\
@@ -41,7 +46,7 @@ def combat(player, enemy_name, current_room):
 
     enemy = rooms[current_room]["Enemy"]
     print(f"\nYou encounter a {enemy_name}!")
-    print(f"Your Health: {player['Health']} | Enemy Health: {enemy['Health']}")
+    print(f"Player: {player['Health']}/{player['Strength']} | {enemy_name}: {enemy['Health']}/{enemy['Strength']}")
 
     while player["Health"] > 0 and enemy["Health"] > 0:
         # Player's attack
@@ -53,6 +58,16 @@ def combat(player, enemy_name, current_room):
 
         if enemy["Health"] <= 0:
             print(f"You defeated the {enemy_name}!")
+            
+            # Grant gold to the player
+            if enemy.get("IsFinalBoss", False):
+                player["Gold"] += 3
+                print("You defeated the final boss! You earn 3 gold!")
+            else:
+                player["Gold"] += 1
+                print("You earn 1 gold!")
+
+            print(f"Your total gold: {player['Gold']}")
 
             # Add room item to inventory, if present
             if "Item" in rooms[current_room]:
@@ -82,6 +97,27 @@ def combat(player, enemy_name, current_room):
         print(f"\nYour Health: {player['Health']} | {enemy_name}'s Health: {enemy['Health']}")
 
     return False  # Default fail-safe
+
+# Function to handle enemy defeat
+def defeat_enemy(current_room):
+    global gold
+    
+    # Check if the room has an enemy
+    if 'Enemy' in rooms[current_room]:
+        enemy = rooms[current_room]['Enemy']
+        # Check if it's the final boss
+        if enemy.get('IsFinalBoss', False):
+            gold += 3
+            print(f"You defeated the final boss! You earned 3 gold. Total gold: {gold}")
+        else:
+            gold += 1
+            print(f"You defeated {enemy['Name']}! You earned 1 gold. Total gold: {gold}")
+        
+        # Remove the defeated enemy
+        del rooms[current_room]['Enemy']
+    else:
+        print("There is no enemy here to defeat.")
+
 
 # Map
 rooms = {
@@ -119,7 +155,7 @@ rooms = {
         'Description':'The bazaar location description.',
         'Enemy':{'Name': 'Vampire', 'Health': 0, 'Strength': 0},
     },
-    'Pit Of Pendulums': {
+    'Pit of Pendulums': {
         'South':'Bazaar',
         'East':'Tomb of the Forgotten',
         'Item':'Glass Eye of Mystery',
@@ -127,7 +163,7 @@ rooms = {
         'Enemy':{'Name': 'Brigand', 'Health': 0, 'Strength': 0},
     },
     'Tomb of the Forgotten': {
-        'West':'Pit Of Pendulums',
+        'West':'Pit of Pendulums',
         'Item':'Heavy Shield',
         'Description':'The location description.',
         'Enemy':{'Name': 'Black Cat', 'Health': 0, 'Strength': 0},
@@ -136,7 +172,7 @@ rooms = {
         'East':'Bazaar',
         'Item':'Treasure Chest',
         'Description':'The location description.',
-        'Enemy':{'Name': 'The Final Boss', 'Health': 0, 'Strength': 0},
+        'Enemy':{'Name': 'Dragon Butt', 'Health': 0, 'Strength': 0, 'IsFinalBoss':True},
     }
     }
 
@@ -147,28 +183,21 @@ for room, details in rooms.items():
         details['Enemy']['Health'] = roll_d6()
         details['Enemy']['Strength'] = roll_d6()
 
-
 # Player and Enemy stats
 player = {
     "Health": 5,
-    "Strength": 5
+    "Strength": 5,
+    "Gold":0
     }
-
-# enemies = {
-#     "Goblin": {"Health":5, "Strength":2},
-#     "Brigand": {"Health":5, "Strength":3},
-#     "Ghoul": {"Health":5, "Strength":3},
-#     "Black Cat": {"Health":5, "Strength":3},
-#     "Vampire": {"Health":5, "Strength":3},
-#     "Fianl Boss": {"Health":5, "Strength":3},
-#     }
-
 
 # List of Vowels
 vowels = ['a', 'e', 'i', 'o', 'u']
 
 # List to track inventory
 inventory = []
+
+# List player gold
+gold = 0
 
 # Track current room
 current_room = "Liminal Space"
@@ -193,7 +222,7 @@ while True:
 
     # Display info player
     print(f"You are in {current_room}\nRound: {round_number}/{total_rounds}\nHealth: {player['Health']}\n\
-    Strength: {player['Strength']}\nLoot: {inventory}\n{'--' * 17}")
+Strength: {player['Strength']}\nGold: {gold}\nLoot: {inventory}\n{'--' * 17}")
 
     # Dispaly msg
     print(msg)
@@ -202,20 +231,6 @@ while True:
     if "Item" in rooms[current_room].keys():
 
         nearby_item = rooms[current_room]["Item"]
-
-        # if nearby_item not in inventory:
-
-        #     # Plural
-        #     if nearby_item[-1] == 's':
-        #         print(f"You see {nearby_item}")
-
-        #     # Singular starts with vowel
-        #     elif nearby_item[0] in vowels:
-        #         print(f"You see an {nearby_item}")
-
-        #     # Singular starts with consanent
-        #     else:
-        #         print(f"You see a {nearby_item}")
 
     # Accept player input for move
     user_input = input("Enter your move: \n")
