@@ -1,5 +1,6 @@
 import os
 import random
+import sys
 
 from colorama import Fore, Back, Style, init
 
@@ -8,8 +9,37 @@ init()
 
 # Display main menu.
 def mainMenu():
-    print(Fore.GREEN + "1. List\n\
-    2. List")
+    while True: # Keep showing the menu until player chooses to exit
+        clear()
+        print(Fore.GREEN + "~~~~ Welcome the Dungeon! ~~~~\n\
+    1. Begin the adventure\n\
+    2. Gameplay & Rules\n\
+    3. Commands\n\
+    4. Exit\n")
+
+        choice = input("Enter your selection: \n")
+
+ # Process the choice
+        if choice == "1":
+            clear()
+            print(Fore.YELLOW + "\nStarting your adventure...\n")
+            prompt()  # Call a function to begin the game
+            break # Exits the menu loop
+        elif choice == "2":
+            clear()
+            print(Fore.CYAN + "\n~~~ Gameplay & Rules ~~~")
+            displayRules()  # Call a function to show rules
+        elif choice == "3":
+            clear()
+            print(Fore.BLUE + "\n~~~ Commands ~~~")
+            displayCommands()  # Call a function to list commands
+        elif choice == "4":
+            clear()
+            print(Fore.RED + "\nExiting the game. Goodbye!")
+            sys.exit()  # Exit the program
+        else:
+            clear()
+            print(Fore.RED + "Invalid selection. Please choose a valid option.\n")
 
 # Display the start menu.
 def prompt():
@@ -25,6 +55,22 @@ unearth the secrets of the dungeon.\n\n\
 dungeon claim yet another soul?\n\n\
 The dungeon awaits... let the adventure begin!\n")
 
+    input("\t\tPress any key to continue ...\n")
+
+def displayRules():
+    print("Rules of the game:\n\
+1. You have 30 rounds to explore the dungeon.\n\
+2. Each turn, roll dice to allocate to movement, treasure, enemy, and location.\n\
+3. Defeat enemies to collect gold and items.\n\
+4. The game ends when you defeat the final boss or run out of rounds.\n")
+    input("\t\tPress any key to continue ...\n")
+
+def displayCommands():
+    print("Available commands:\n\
+- 'Look': Inspect your current room.\n\
+- 'Go': Navigate to another room.\n\
+- 'Attack': Engage in combat with an enemy.\n\
+- 'Inventory': Check your collected items and gold.\n")
     input("\t\tPress any key to continue ...\n")
 
 # Clear the terminal.
@@ -213,7 +259,8 @@ total_rounds = 30
 
 
 clear()
-prompt()
+mainMenu()
+#prompt()
 
 # Gameplay Loop
 while True:
