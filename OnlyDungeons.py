@@ -1,170 +1,117 @@
 import os
 import random
 import sys
-
-from colorama import Fore, Back, Style, init
-
+from colorama import Fore, init
 
 init()
 
-# Display main menu.
-def mainMenu():
-    while True: # Keep showing the menu until player chooses to exit
+# Constants
+ROOM_KEYS = ["Item", "Enemy", "Description"]
+
+# Utility Functions
+def clear():
+    """Clear the terminal screen."""
+    os.system("cls" if os.name == "nt" else "clear")
+
+def roll_d6():
+    """Simulate a D6 dice roll."""
+    return random.randint(1, 6)
+
+def input_with_prompt(prompt_text):
+    """Helper for input prompts."""
+    input(Fore.YELLOW + prompt_text + Fore.RESET)
+
+# Menu Functions
+def main_menu():
+    """Display the main menu and handle navigation."""
+    while True:
         clear()
-        print(Fore.GREEN + "~~~~ Welcome the Dungeon! ~~~~\n\
-    1. Begin the adventure\n\
-    2. Gameplay & Rules\n\
-    3. Commands\n\
-    4. Exit\n")
+        print(Fore.GREEN + "~~~~ Welcome to the Dungeon! ~~~~\n"
+              "1. Begin the adventure\n"
+              "2. Gameplay & Rules\n"
+              "3. Commands\n"
+              "4. Exit\n")
+        choice = input("Enter your selection: ")
 
-        choice = input("Enter your selection: \n")
-
- # Process the choice
         if choice == "1":
             clear()
-            print(Fore.YELLOW + "\nStarting your adventure...\n")
-            prompt()  # Call a function to begin the game
-            break # Exits the menu loop
+            print(Fore.YELLOW + "Starting your adventure...\n")
+            prompt()
+            return  # Exit the menu loop
         elif choice == "2":
             clear()
-            print(Fore.CYAN + "\n~~~ Gameplay & Rules ~~~")
-            displayRules()  # Call a function to show rules
+            display_rules()
         elif choice == "3":
             clear()
-            print(Fore.BLUE + "\n~~~ Commands ~~~")
-            displayCommands()  # Call a function to list commands
+            display_commands()
         elif choice == "4":
             clear()
-            print(Fore.RED + "\nExiting the game. Goodbye!")
-            sys.exit()  # Exit the program
+            print(Fore.RED + "Exiting the game. Goodbye!")
+            sys.exit()
         else:
             clear()
             print(Fore.RED + "Invalid selection. Please choose a valid option.\n")
 
-# Display the start menu.
-def prompt():
-    print(Fore.GREEN + "\t\tWelcome, Brave Adventurer!\n\n\
-\tYou stand at the threshold of the forgotten dungeon, a labyrinth of peril and mystery.\n\
-Whispers speak of untold treasures guarded by ancient foes, each more deadly than the last.\n\
-To claim victory, you must gather six legendary artifacts, hidden deep within the dungeon, each\n\
-guarded by fearsome enemies.\n\n\
-\tYour journey will test your courage, strategy, and skill. Armed with nothing but your wits, your dice,\n\
-and your resolve, you must navigate through treacherous rooms, face off against monstrous enemies, and\n\
-unearth the secrets of the dungeon.\n\n\
-\tRoll the dice, make your move, and choose your actions wisely. Will you emerge victorious, or will the\n\
-dungeon claim yet another soul?\n\n\
-The dungeon awaits... let the adventure begin!\n")
+def display_rules():
+    print(Fore.CYAN + "~~~ Gameplay & Rules ~~~\n"
+          "1. You have 30 rounds to explore the dungeon.\n"
+          "2. Allocate dice rolls to movement, treasure, enemy, and location.\n"
+          "3. Defeat enemies to collect gold and items.\n"
+          "4. The game ends when you defeat the final boss or run out of rounds.\n")
+    input_with_prompt("Press any key to continue...")
 
-    input("\t\tPress any key to continue ...\n")
+def display_commands():
+    print(Fore.BLUE + "~~~ Commands ~~~\n"
+          "- 'Look': Inspect your current room.\n"
+          "- 'Go': Navigate to another room.\n"
+          "- 'Attack': Engage in combat with an enemy.\n"
+          "- 'Inventory': Check your collected items and gold.\n")
+    input_with_prompt("Press any key to continue...")
 
-def displayRules():
-    print("Rules of the game:\n\
-1. You have 30 rounds to explore the dungeon.\n\
-2. Each turn, roll dice to allocate to movement, treasure, enemy, and location.\n\
-3. Defeat enemies to collect gold and items.\n\
-4. The game ends when you defeat the final boss or run out of rounds.\n")
-    input("\t\tPress any key to continue ...\n")
+# Gameplay Functions
+def describe_room(current_room):
+    """Generate a description of the current room."""
+    description = rooms[current_room].get("Description", "Nothing special here.")
+    exits = [key for key in rooms[current_room] if key not in ROOM_KEYS]
+    exit_str = ", ".join(exits)
+    msg = f"{description}\nExits: {exit_str}"
 
-def displayCommands():
-    print("Available commands:\n\
-- 'Look': Inspect your current room.\n\
-- 'Go': Navigate to another room.\n\
-- 'Attack': Engage in combat with an enemy.\n\
-- 'Inventory': Check your collected items and gold.\n")
-    input("\t\tPress any key to continue ...\n")
+    if "Enemy" in rooms[current_room]:
+        enemy = rooms[current_room]["Enemy"]
+        msg += f"\nEnemy: {enemy['Name']} {enemy['Health']}/{enemy['Strength']}"
+    return msg
 
-# Clear the terminal.
-def clear():
-    try:
-        os.system('cls' if os.name == 'nt' else 'clear')
-    except Exception as e:
-        print("\n" * 50)
-
-# Define dice roll D6 & Combat function
-def roll_d6():
-    return random.randint(1,6)
-
-# Combat description and mechanics
 def combat(player, enemy_name, current_room):
-    if "Enemy" not in rooms[current_room]:
-        print(f"No enemy named {enemy_name} is present in this room.")
-        return False
-
+    """Handle combat mechanics."""
     enemy = rooms[current_room]["Enemy"]
-    print(f"\nYou encounter a {enemy_name}!")
+    print(f"\nYou encounter {enemy_name}!")
     print(f"Player: {player['Health']}/{player['Strength']} | {enemy_name}: {enemy['Health']}/{enemy['Strength']}")
 
     while player["Health"] > 0 and enemy["Health"] > 0:
-        # Player's attack
-        input("Press Enter to roll for your attack...")
-        player_roll = roll_d6()
-        player_damage = player_roll * player["Strength"]
+        # Player attacks
+        input_with_prompt("Press Enter to roll for your attack...")
+        player_damage = roll_d6() * player["Strength"]
         enemy["Health"] -= player_damage
-        print(f"You rolled {player_roll}! You deal {player_damage} damage.")
+        print(f"You deal {player_damage} damage.")
 
         if enemy["Health"] <= 0:
             print(f"You defeated the {enemy_name}!")
-            
-            # Grant gold to the player
-            if enemy.get("IsFinalBoss", False):
-                player["Gold"] += 3
-                print("You defeated the final boss! You earn 3 gold!")
-            else:
-                player["Gold"] += 1
-                print("You earn 1 gold!")
+            player["Gold"] += 3 if enemy.get("IsFinalBoss") else 1
+            print(f"You earned {player['Gold']} gold in total.")
+            del rooms[current_room]["Enemy"]
+            return True  # Victory
 
-            print(f"Your total gold: {player['Gold']}")
-
-            # Add room item to inventory, if present
-            if "Item" in rooms[current_room]:
-                item = rooms[current_room]["Item"]
-                if item not in inventory:
-                    inventory.append(item)
-                    print(f"You found and collected the {item}!")
-
-            # Safely remove the enemy
-            if "Enemy" in rooms[current_room]:
-                del rooms[current_room]["Enemy"]
-
-            return True  # Player wins
-
-        # Enemy's attack
-        input(f"The {enemy_name} attacks! Press Enter to roll for defense...")
-        enemy_roll = roll_d6()
-        enemy_damage = enemy_roll * enemy["Strength"]
+        # Enemy attacks
+        input_with_prompt(f"The {enemy_name} attacks! Press Enter to defend...")
+        enemy_damage = roll_d6() * enemy["Strength"]
         player["Health"] -= enemy_damage
-        print(f"The {enemy_name} rolled {enemy_roll}! It deals {enemy_damage} damage.")
+        print(f"The {enemy_name} deals {enemy_damage} damage.")
 
         if player["Health"] <= 0:
-            print("You have been defeated! Game over.")
-            return False  # Enemy wins
+            print("You have been defeated. Game over!")
+            return False  # Loss
 
-        # Show updated health
-        print(f"\nYour Health: {player['Health']} | {enemy_name}'s Health: {enemy['Health']}")
-
-    return False  # Default fail-safe
-
-# Function to handle enemy defeat
-def defeat_enemy(current_room):
-    global gold
-    
-    # Check if the room has an enemy
-    if 'Enemy' in rooms[current_room]:
-        enemy = rooms[current_room]['Enemy']
-        # Check if it's the final boss
-        if enemy.get('IsFinalBoss', False):
-            gold += 3
-            print(f"You defeated the final boss! You earned 3 gold. Total gold: {gold}")
-        else:
-            gold += 1
-            print(f"You defeated {enemy['Name']}! You earned 1 gold. Total gold: {gold}")
-        
-        # Remove the defeated enemy
-        del rooms[current_room]['Enemy']
-    else:
-        print("There is no enemy here to defeat.")
-
-
+# Initialization
 # Map
 rooms = {
     'Liminal Space': {
@@ -221,163 +168,45 @@ rooms = {
         'Enemy':{'Name': 'Dragon Butt', 'Health': 0, 'Strength': 0, 'IsFinalBoss':True},
     }
     }
-
-
-# Initialize enemy stats
-for room, details in rooms.items():
-    if 'Enemy' in details:
-        details['Enemy']['Health'] = roll_d6()
-        details['Enemy']['Strength'] = roll_d6()
-
-# Player and Enemy stats
-player = {
-    "Health": 5,
-    "Strength": 5,
-    "Gold":0
-    }
-
-# List of Vowels
-vowels = ['a', 'e', 'i', 'o', 'u']
-
-# List to track inventory
+player = {"Health": 5, "Strength": 5, "Gold": 0}
 inventory = []
-
-# List player gold
-gold = 0
-
-# Track current room
 current_room = "Liminal Space"
-
-# Result of last move
-msg = ""
-
-# Initialize the round number
-round_number = 1  # Start at round 1
-
-# Total rounds in the game
+round_number = 1
 total_rounds = 30
 
+# Game Loop
+def game_loop():
+    while round_number <= total_rounds:
+        clear()
+        print(f"Room: {current_room}\nRound: {round_number}/{total_rounds}\n"
+              f"Health: {player['Health']} | Strength: {player['Strength']} | Gold: {player['Gold']}\n"
+              f"Loot: {inventory}\n{'-' * 34}")
+        print(describe_room(current_room))
 
-clear()
-mainMenu()
-#prompt()
+        user_input = input("Enter your action: ").strip().title().split()
+        action = user_input[0]
+        direction = user_input[1] if len(user_input) > 1 else None
 
-# Gameplay Loop
-while True:
-
-    clear()
-
-    # Display info player
-    print(f"You are in {current_room}\nRound: {round_number}/{total_rounds}\nHealth: {player['Health']}\n\
-Strength: {player['Strength']}\nGold: {gold}\nLoot: {inventory}\n{'--' * 17}")
-
-    # Dispaly msg
-    print(msg)
-
-    # Item indicator
-    if "Item" in rooms[current_room].keys():
-
-        nearby_item = rooms[current_room]["Item"]
-
-    # Accept player input for move
-    user_input = input("Enter your move: \n")
-
-    # Split move into words
-    next_move = user_input.split(' ')
-
-    # First word is action
-    action = next_move[0].title()
-
-    # Increment the round number after the action
-    round_number += 1
-
-    if len(next_move) > 1:
-        item = next_move[1:]
-        direction = next_move[1].title()
-
-        item = ' '.join(item).title()
-
-    # You can also check if the player has completed the game or lost
-    if round_number > total_rounds:
-        print("Game over! You've completed all 30 rounds.")
-        break
-
-    # Moving between rooms
-    if action == "Go":
-
-        try:
-            current_room = rooms[current_room][direction]
-            msg = f"You have traveled {direction} to the {current_room}."
-
-        except:
-            msg = f"You can't go that way."
- 
-    # Picking up items
-    elif action == "Get":
-
-        try:
-            if item == rooms[current_room]["Item"]:
-
-                if item not in inventory:
-
-                    inventory.append(rooms[current_room]["Item"])
-                    msg = f"{item} retrieved!"
-
-                else:
-                    msg = f"You already have the {item}."
-
+        if action == "Go" and direction:
+            if direction in rooms[current_room]:
+                current_room = rooms[current_room][direction]
+                print(f"You move {direction} to {current_room}.")
             else:
-                msg = f"Can't find {item}."
-
-        except:
-            msg = f"Can't find {item}."
-
-    # Add Look action
-    elif action == "Look":
-        # Get room description
-        description = rooms[current_room].get("Description", "You see nothing special here.")
-
-        # Get item description if present.
-
-
-        # Get Exits
-        exits = [key for key in rooms[current_room].keys() if key not in ["Item", "Enemy", "Description"]]
-        exit_str = ", ".join(exits)
-
-        # Add description to mesaage.
-        msg = f"{description}\nExits: {exit_str}"
-
-        # Add enemy description if present.
-        if "Enemy" in rooms[current_room]:
-            enemy = rooms[current_room]["Enemy"]
-            if isinstance(enemy, dict):
-                enemy_name = enemy["Name"]
-                enemy_health = enemy["Health"]
-                enemy_strength = enemy["Strength"]
-                msg += f"\nEnemy: {enemy_name} {enemy_health}/{enemy_strength}"
-
-    # Add Attack action
-    elif action == "Attack":
-        if "Enemy" in rooms[current_room]:
-            enemy = rooms[current_room]["Enemy"]
-            victory = combat(player, enemy["Name"], current_room)
-#           if victory:
-#                del rooms[current_room]["Enemy"]  # Remove defeated enemy
-       
+                print("You can't go that way.")
+        elif action == "Look":
+            print(describe_room(current_room))
+        elif action == "Attack":
+            if "Enemy" in rooms[current_room]:
+                combat(player, rooms[current_room]["Enemy"]["Name"], current_room)
+            else:
+                print("No enemy here.")
+        elif action == "Inventory":
+            print(f"Inventory: {inventory}\nGold: {player['Gold']}")
+        elif action == "Exit":
+            break
         else:
-            print("No enemy here to attack.")
+            print("Invalid command.")
+        round_number += 1
 
-    # Add random dice roll
-    elif action == "Roll":
-        import random
-        rolls = [random.randint(1, 6) for _ in range(4)]
-        msg = f"Dice Rolls: {', '.join(map(str, rolls))}"
-
-    # Exit game
-    elif action == "Exit":
-        break
-
-    # Help commands
-
-    else:
-        msg = "Invalid Command"
+main_menu()
+game_loop()
