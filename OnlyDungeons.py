@@ -8,22 +8,22 @@ init()
 # Constants
 ROOM_KEYS = ["Item", "Enemy", "Description"]
 
-# Utility Functions
+## Utility Functions ##
+# Clear the terminal screen.  
 def clear():
-    """Clear the terminal screen."""
     os.system("cls" if os.name == "nt" else "clear")
 
+# Simulate a D6 roll.
 def roll_d6():
-    """Simulate a D6 dice roll."""
     return random.randint(1, 6)
 
+# Helper for input prompts.
 def input_with_prompt(prompt_text):
-    """Helper for input prompts."""
     input(Fore.YELLOW + prompt_text + Fore.RESET)
 
 # Menu Functions
 def main_menu():
-    """Display the main menu and handle navigation."""
+    # Display the main menu and handle navigation.
     while True:
         clear()
         print(Fore.GREEN + "~~~~ Welcome to the Dungeon! ~~~~\n"
@@ -52,6 +52,21 @@ def main_menu():
             clear()
             print(Fore.RED + "Invalid selection. Please choose a valid option.\n")
 
+def prompt():
+    print(Fore.GREEN + "\t\tWelcome, Brave Adventurer!\n\n\
+\tYou stand at the threshold of the forgotten dungeon, a labyrinth of peril and mystery.\n\
+Whispers speak of untold treasures guarded by ancient foes, each more deadly than the last.\n\
+To claim victory, you must gather six legendary artifacts, hidden deep within the dungeon, each\n\
+guarded by fearsome enemies.\n\n\
+\tYour journey will test your courage, strategy, and skill. Armed with nothing but your wits, your dice,\n\
+and your resolve, you must navigate through treacherous rooms, face off against monstrous enemies, and\n\
+unearth the secrets of the dungeon.\n\n\
+\tRoll the dice, make your move, and choose your actions wisely. Will you emerge victorious, or will the\n\
+dungeon claim yet another soul?\n\n\
+The dungeon awaits... let the adventure begin!\n")
+
+    input("\t\tPress any key to continue ...\n")
+
 def display_rules():
     print(Fore.CYAN + "~~~ Gameplay & Rules ~~~\n"
           "1. You have 30 rounds to explore the dungeon.\n"
@@ -70,7 +85,7 @@ def display_commands():
 
 # Gameplay Functions
 def describe_room(current_room):
-    """Generate a description of the current room."""
+    #Generate a description of the current room.
     description = rooms[current_room].get("Description", "Nothing special here.")
     exits = [key for key in rooms[current_room] if key not in ROOM_KEYS]
     exit_str = ", ".join(exits)
@@ -82,7 +97,7 @@ def describe_room(current_room):
     return msg
 
 def combat(player, enemy_name, current_room):
-    """Handle combat mechanics."""
+    #Handle combat mechanics.
     enemy = rooms[current_room]["Enemy"]
     print(f"\nYou encounter {enemy_name}!")
     print(f"Player: {player['Health']}/{player['Strength']} | {enemy_name}: {enemy['Health']}/{enemy['Strength']}")
@@ -107,9 +122,57 @@ def combat(player, enemy_name, current_room):
         player["Health"] -= enemy_damage
         print(f"The {enemy_name} deals {enemy_damage} damage.")
 
+        if enemy["Health"] <= 0:
+            print(f"You defeated the {enemy_name}!")
+            
+            # Grant gold to the player
+            if enemy.get("IsFinalBoss", False):
+                player["Gold"] += 3
+                print("You defeated the final boss! You earn 3 gold!")
+            else:
+                player["Gold"] += 1
+                print("You earn 1 gold!")
+
+            print(f"Your total gold: {player['Gold']}")
+
+            # Add room item to inventory, if present
+            if "Item" in rooms[current_room]:
+                item = rooms[current_room]["Item"]
+                if item not in inventory:
+                    inventory.append(item)
+                    print(f"You found and collected the {item}!")
+
+            # Safely remove the enemy
+            if "Enemy" in rooms[current_room]:
+                del rooms[current_room]["Enemy"]
+
+            return True  # Player wins
+         # Show updated health
+        print(f"\nYour Health: {player['Health']} | {enemy_name}'s Health: {enemy['Health']}")
+
         if player["Health"] <= 0:
             print("You have been defeated. Game over!")
             return False  # Loss
+
+# Function to handle enemy defeat
+def defeat_enemy(current_room):
+    global gold
+    
+    # Check if the room has an enemy
+    if 'Enemy' in rooms[current_room]:
+        enemy = rooms[current_room]['Enemy']
+        # Check if it's the final boss
+        if enemy.get('IsFinalBoss', False):
+            gold += 3
+            print(f"You defeated the final boss! You earned 3 gold. Total gold: {gold}")
+        else:
+            gold += 1
+            print(f"You defeated {enemy['Name']}! You earned 1 gold. Total gold: {gold}")
+        
+        # Remove the defeated enemy
+        del rooms[current_room]['Enemy']
+    else:
+        print("There is no enemy here to defeat.")
 
 # Initialization
 # Map
@@ -124,7 +187,7 @@ rooms = {
         'South':'Liminal Space',
         'Item':'Crystal',
         'Description':'A room full of dusty mirrors!',
-        'Enemy':{'Name': 'Ghoul', 'Health':10, 'Strength': 0},
+        'Enemy':{'Name': 'Ghoul', 'Health':0, 'Strength': 0},
     },
     'Bat Cavern': {
         'North':'Liminal Space',
@@ -168,6 +231,13 @@ rooms = {
         'Enemy':{'Name': 'Dragon Butt', 'Health': 0, 'Strength': 0, 'IsFinalBoss':True},
     }
     }
+
+# Initialize enemy stats
+for room, details in rooms.items():
+    if 'Enemy' in details:
+        details['Enemy']['Health'] = roll_d6()
+        details['Enemy']['Strength'] = roll_d6()
+
 player = {"Health": 5, "Strength": 5, "Gold": 0}
 inventory = []
 current_room = "Liminal Space"
@@ -176,6 +246,11 @@ total_rounds = 30
 
 # Game Loop
 def game_loop():
+    global round_number
+    global current_room
+    global msg 
+    global gold 
+
     while round_number <= total_rounds:
         clear()
         print(f"Room: {current_room}\nRound: {round_number}/{total_rounds}\n"
