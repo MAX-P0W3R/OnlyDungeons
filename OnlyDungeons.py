@@ -159,8 +159,8 @@ def combat(player, enemy_name, current_room):
             print(f"The {enemy_name} rolled {enemy_roll}! It deals {enemy_damage} damage to you.")
 
             if player["Health"] <= 0:
-                print("You have been defeated! Game over.")
-                return False  # Enemy wins
+                print(f"\nYou have been defeated by the {enemy_name}!")
+                exit()  # Enemy wins and game ends.
 
         # Switch turns
         player_turn = not player_turn
