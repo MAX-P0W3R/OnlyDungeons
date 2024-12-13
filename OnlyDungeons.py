@@ -35,7 +35,7 @@ def main_menu():
 
         if choice == "1":
             clear()
-            print(Fore.YELLOW + "Starting your adventure...\n")
+            print(Fore.CYAN + "Starting your adventure...\n")
             prompt()
             return  # Exit the menu loop
         elif choice == "2":
