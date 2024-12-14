@@ -35,7 +35,7 @@ def main_menu():
 
         if choice == "1":
             clear()
-            print(Fore.CYAN + "Starting your adventure...\n")
+            #print(Fore.GREEN + "Starting your adventure...\n")
             prompt()
             return  # Exit the menu loop
         elif choice == "2":
@@ -53,7 +53,7 @@ def main_menu():
             print(Fore.RED + "Invalid selection. Please choose a valid option.\n")
 
 def prompt():
-    print(Fore.GREEN + "\t\tWelcome, Brave Adventurer!\n\n\
+    print(Fore.GREEN + "\tWelcome, Brave Adventurer!\n\n\
 \tYou stand at the threshold of the forgotten dungeon, a labyrinth of peril and mystery.\n\
 Whispers speak of untold treasures guarded by ancient foes, each more deadly than the last.\n\
 To claim victory, you must gather six legendary artifacts, hidden deep within the dungeon, each\n\
@@ -65,22 +65,24 @@ unearth the secrets of the dungeon.\n\n\
 dungeon claim yet another soul?\n\n\
 The dungeon awaits... let the adventure begin!\n")
 
-    input("\t\tPress any key to continue ...\n")
+    input(Fore.YELLOW + "\tPress any key to continue ...\n")
 
 def display_rules():
-    print(Fore.CYAN + "~~~ Gameplay & Rules ~~~\n"
-          "1. You have 30 rounds to explore the dungeon.\n"
-          "2. Allocate dice rolls to movement, treasure, enemy, and location.\n"
-          "3. Defeat enemies to collect gold and items.\n"
-          "4. The game ends when you defeat the final boss or run out of rounds.\n")
+    print(Fore.CYAN + " <<< Gameplay & Rules >>>\n"
+          " ~ You have 30 rounds to explore the dungeon.\n"
+          " ~ Navigate the dungeon to find monsters, treasure, and adventure.\n"
+          " ~ Defeat enemies to collect gold and items.\n"
+          " ~ The game ends when you defeat the final boss or run out of rounds.\n"
+          " ~ In order to unlock the door to the final boss, you must find the key first.\n" )
     input_with_prompt("Press any key to continue...")
 
 def display_commands():
-    print(Fore.BLUE + "~~~ Commands ~~~\n"
-          "- 'Look': Inspect your current room.\n"
-          "- 'Go': Navigate to another room.\n"
-          "- 'Attack': Engage in combat with an enemy.\n"
-          "- 'Inventory': Check your collected items and gold.\n")
+    print(Fore.CYAN + " <<< Commands >>>\n"
+          " ~ 'Look': Inspect your current room.\n"
+          " ~ 'Go': Navigate to another room.\n"
+          " ~ 'Attack': Engage in combat with an enemy.\n"
+          " ~ 'Inventory': Check your collected items and gold.\n"
+          " ~ 'Rules': Display game rules.\n")
     input_with_prompt("Press any key to continue...")
 
 # Gameplay Functions
@@ -102,11 +104,11 @@ def combat(player, enemy_name, current_room):
         return False
 
     enemy = rooms[current_room]["Enemy"]
-    print(f"\nYou encounter a {enemy_name}!")
+    print(Fore.RED + f"\nYou have encountered a {enemy_name}!")
     print(f"Player: {player['Health']} HP / {player['Strength']} STR | {enemy_name}: {enemy['Health']} HP / {enemy['Strength']} STR")
 
     # Initiative Roll
-    input("Press Enter to roll for initiative...")
+    input(Fore.YELLOW + "Press Enter to roll for initiative...")
     player_initiative = roll_d6()
     enemy_initiative = roll_d6()
     print(f"\nYou rolled {player_initiative} for initiative!")
@@ -253,7 +255,7 @@ def game_loop():
         clear()
 
         # Display player information
-        print(f"You are in {current_room}\nRound: {round_number}/{total_rounds}\nHealth: {player['Health']}\n\
+        print(Fore.GREEN + f"You are in {current_room}\nRound: {round_number}/{total_rounds}\nHealth: {player['Health']}\n\
 Strength: {player['Strength']}\nGold: {player['Gold']}\nLoot: {inventory}\n{'--' * 17}")
 
         # Display the latest message
