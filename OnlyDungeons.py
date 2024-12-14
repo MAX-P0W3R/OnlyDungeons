@@ -7,7 +7,9 @@ init()
 
 # Constants
 ROOM_KEYS = ["Item", "Enemy", "Description"]
-
+CYAN = '\033[96m'
+GREEN = '\033[92m'
+RESET = GREEN
 ## Utility Functions ##
 # Clear the terminal screen.  
 def clear():
@@ -81,8 +83,7 @@ def display_commands():
           " ~ 'Look': Inspect your current room.\n"
           " ~ 'Go': Navigate to another room.\n"
           " ~ 'Attack': Engage in combat with an enemy.\n"
-          " ~ 'Inventory': Check your collected items and gold.\n"
-          " ~ 'Rules': Display game rules.\n")
+          " ~ 'Help': Display game rules.\n")
     input_with_prompt("Press any key to continue...")
 
 # Gameplay Functions
@@ -179,7 +180,16 @@ rooms = {
         'North':'Mirror Maze',
         'South':'Bat Cavern',
         'East':'Bazaar',
-        'Description':'Starting point. Grand entrance'
+        'Description':'You step into the first chamber of the dungeon, your boots scraping against the rough, uneven stone floor. The air is damp\n'
+        'and heavy, carrying the faint, metallic tang of rust and the acrid bite of mildew. The walls glisten faintly with\n'
+        'moisture, their surfaces etched with marks of age and strange, cryptic symbols worn smooth by time.\n'
+        'The faint sound of water dripping echoes through the chamber, rhythmic and hollow, as if the dungeon itself has a heartbeat.\n\n'
+        'Somewhere in the distance, you think you hear the faint scuttle of claws on stone or the muted whisper of something unseen\n'
+        'shifting in the shadows. A faint draft snakes through the room, cool and clammy against your skin, as though the\n'
+        'dungeon is breathing, its cold exhale brushing past you. The dim light from your torch dances erratically,\n'
+        'casting long, flickering shadows that seem to stretch and writhe across the walls.\n\n'
+        'This place feels alive...watching, waiting, testing your resolve. The adventure has begun!\n'
+        'What will you do next?\n'
     },
     'Mirror Maze': {
         'South':'Liminal Space',
@@ -256,7 +266,7 @@ def game_loop():
 
         # Display player information
         print(Fore.GREEN + f"You are in {current_room}\nRound: {round_number}/{total_rounds}\nHealth: {player['Health']}\n\
-Strength: {player['Strength']}\nGold: {player['Gold']}\nLoot: {inventory}\n{'--' * 17}")
+Strength: {player['Strength']}\nGold: {player['Gold']}\nLoot: {inventory}\n{'--' * 17}\n")
 
         # Display the latest message
         print(msg)
@@ -313,7 +323,7 @@ Strength: {player['Strength']}\nGold: {player['Gold']}\nLoot: {inventory}\n{'--'
             description = rooms[current_room].get("Description", "You see nothing special here.")
             exits = [key for key in rooms[current_room].keys() if key not in ["Item", "Enemy", "Description"]]
             exit_str = ", ".join(exits)
-            msg = f"{description}\nExits: {exit_str}"
+            msg = f"{description}\n{CYAN}Exits: {exit_str}{RESET}"
 
             if "Item" in rooms[current_room]:
                 item = rooms[current_room]["Item"]
