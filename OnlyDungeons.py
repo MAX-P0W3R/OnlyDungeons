@@ -293,9 +293,6 @@ Strength: {player['Strength']} Gold: {player['Gold']} Loot: {inventory}\n{'--' *
         # First word is action
         action = next_move[0].title()
 
-        # Increment the round number after the action
-        round_number += 1
-
         if len(next_move) > 1:
             item = next_move[1:]
             direction = next_move[1].title()
@@ -314,6 +311,7 @@ Strength: {player['Strength']} Gold: {player['Gold']} Loot: {inventory}\n{'--' *
                 msg = f"You have traveled {direction} to the {current_room}."
             except KeyError:
                 msg = f"You can't go that way."
+            round_number += 1
 
         elif action == "Help":
             display_commands()
@@ -345,6 +343,7 @@ Strength: {player['Strength']} Gold: {player['Gold']} Loot: {inventory}\n{'--' *
                     msg = f"You defeated {enemy['Name']} and claimed the room's treasure!"
             else:
                 msg = "No enemy here to attack."
+            round_number += 1
 
         elif action == "Roll":
             rolls = [random.randint(1, 6) for _ in range(4)]
