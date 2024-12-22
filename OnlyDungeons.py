@@ -1,6 +1,7 @@
 import os
 import random
 import sys
+import time
 from colorama import Fore, init
 
 init()
@@ -22,6 +23,14 @@ def roll_d6():
 # Helper for input prompts.
 def input_with_prompt(prompt_text):
     input(Fore.YELLOW + prompt_text + Fore.RESET)
+
+#  Print text slowly to simulate a typing effect.
+def print_slow(text, delay=0.05):
+    for char in text:
+        sys.stdout.write(char)
+        sys.stdout.flush()
+        time.sleep(delay)
+    print()  # Move to the next line after completing the text
 
 # Menu Functions
 def main_menu():
@@ -256,17 +265,17 @@ msg= ""
 
 # Game Loop
 def game_loop():
-    global round_number  # Use the global round number
-    global current_room
-    global msg
-    global gold
-
+    global round_number, current_room, player_health, player_strength, total_rounds, msg, gold  # Use the global round number
+    
     while round_number <= total_rounds:  # Loop until all rounds are completed
         clear()
+        # Display room information
+        description = rooms[current_room].get("Description", "You see nothing special here.")
+        print(description + f"\n{'--' * 17}")
 
         # Display player information
-        print(Fore.GREEN + f"You are in {current_room}\nRound: {round_number}/{total_rounds}\nHealth: {player['Health']}\n\
-Strength: {player['Strength']}\nGold: {player['Gold']}\nLoot: {inventory}\n{'--' * 17}\n")
+        print(Fore.GREEN + f"Current Room: {current_room} ~~ Round: {round_number}/{total_rounds}\nHealth: {player['Health']} \
+Strength: {player['Strength']} Gold: {player['Gold']} Loot: {inventory}\n{'--' * 17}\n")
 
         # Display the latest message
         print(msg)
@@ -306,18 +315,12 @@ Strength: {player['Strength']}\nGold: {player['Gold']}\nLoot: {inventory}\n{'--'
             except KeyError:
                 msg = f"You can't go that way."
 
-        elif action == "Get":
-            try:
-                if item == rooms[current_room]["Item"]:
-                    if item not in inventory:
-                        inventory.append(item)
-                        msg = f"{item} retrieved!"
-                    else:
-                        msg = f"You already have the {item}."
-                else:
-                    msg = f"Can't find {item}."
-            except KeyError:
-                msg = f"Can't find {item}."
+        elif action == "Help":
+            display_commands()
+
+        elif action == "Rules":
+            display_rules()
+
 
         elif action == "Look":
             description = rooms[current_room].get("Description", "You see nothing special here.")
@@ -349,6 +352,20 @@ Strength: {player['Strength']}\nGold: {player['Gold']}\nLoot: {inventory}\n{'--'
 
         elif action == "Exit":
             break
+
+                # Action:GET on hold, building this into a playable interaction with the enemy...
+        # elif action == "Get":
+        #     try:
+        #         if item == rooms[current_room]["Item"]:
+        #             if item not in inventory:
+        #                 inventory.append(item)
+        #                 msg = f"{item} retrieved!"
+        #             else:
+        #                 msg = f"You already have the {item}."
+        #         else:
+        #             msg = f"Can't find {item}."
+        #     except KeyError:
+        #         msg = f"Can't find {item}."
 
         else:
             msg = "Invalid Command"
