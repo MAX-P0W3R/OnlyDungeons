@@ -2,69 +2,239 @@ import os
 import random
 import sys
 import time
-from colorama import Fore, init
-
-init()
+from dataclasses import dataclass
+from typing import Dict, List, Optional, Set
 
 # Constants
-ROOM_KEYS = ["Item", "Enemy", "Description"]
-CYAN = '\033[96m'
-GREEN = '\033[92m'
-RESET = GREEN
-## Utility Functions ##
-# Clear the terminal screen.  
-def clear():
-    os.system("cls" if os.name == "nt" else "clear")
+ROOM_KEYS = {"Item", "Enemy", "Description"}  # Using a set for faster lookups
 
-# Simulate a D6 roll.
-def roll_d6():
-    return random.randint(1, 6)
+# ANSI Color Codes
+class Colors:
+    CYAN = '\033[96m'
+    GREEN = '\033[92m'
+    RED = '\033[91m'  # Fixed missing bracket
+    YELLOW = '\033[93m'
+    BLUE = '\033[94m'
+    MAGENTA = '\033[95m'
+    RESET = '\033[0m'  # Fixed to proper reset
 
-# Helper for input prompts.
-def input_with_prompt(prompt_text):
-    input(Fore.YELLOW + prompt_text + Fore.RESET)
+@dataclass
+class Enemy:
+    name: str
+    health: int = 0
+    strength: int = 0
+    is_final_boss: bool = False
+    def roll_stats(self):
+        """Roll random stats for the enemy"""
+        self.health = random.randint(1, 6)
+        self.strength = random.randint(1, 6)
+        
+    def to_dict(self) -> Dict:
+        """Convert Enemy to dictionary for room storage"""
+        return {
+            'Name': self.name,
+            'Health': self.health,
+            'Strength': self.strength,
+            'IsFinalBoss': self.is_final_boss
+        }    
 
-#  Print text slowly to simulate a typing effect.
-def print_slow(text, delay=0.05):
-    for char in text:
-        sys.stdout.write(char)
-        sys.stdout.flush()
-        time.sleep(delay)
-    print()  # Move to the next line after completing the text
+@dataclass
+class Player:
+    health: int
+    strength: int
+    gold: int
+    inventory: List[str]
 
-# Menu Functions
-def main_menu():
-    # Display the main menu and handle navigation.
-    while True:
-        clear()
-        print(Fore.GREEN + "~~~~ Welcome to the Dungeon! ~~~~\n"
-              "1. Begin the adventure\n"
-              "2. Gameplay & Rules\n"
-              "3. Commands\n"
-              "4. Exit\n")
-        choice = input("Enter your selection: ")
+class DungeonGame:
+    def __init__(self):
+        self.player = Player(health=5, strength=5, gold=0, inventory=[])
+        self.current_room = "Liminal Space"
+        self.round_number = 1
+        self.total_rounds = 30
+        self.message = ""
+        self.enemy_bank = self._create_enemy_bank()
+        self.rooms = self._initialize_rooms()
 
-        if choice == "1":
-            clear()
-            #print(Fore.GREEN + "Starting your adventure...\n")
-            prompt()
-            return  # Exit the menu loop
-        elif choice == "2":
-            clear()
-            display_rules()
-        elif choice == "3":
-            clear()
-            display_commands()
-        elif choice == "4":
-            clear()
-            print(Fore.RED + "Exiting the game. Goodbye!")
-            sys.exit()
-        else:
-            clear()
-            print(Fore.RED + "Invalid selection. Please choose a valid option.\n")
+    def _create_enemy_bank(self) -> List[Enemy]:
+        """Create a bank of enemies that can be assigned to rooms"""
+        enemies = [
+            Enemy(name="Ghoul"),
+            Enemy(name="Ghost"),
+            Enemy(name="Goblin"),
+            Enemy(name="Vampire"),
+            Enemy(name="Skeleton"),
+            Enemy(name="Zombie"),
+            Enemy(name="Wraith"),
+            Enemy(name="Brigand"),
+            Enemy(name="Bandit"),
+            Enemy(name="Ogre"),
+            Enemy(name="Troll"),
+            Enemy(name="Black Cat"),
+            Enemy(name="Giant Rat"),
+            Enemy(name="Slime"),
+            # Final boss is always the same
+            Enemy(name="Dragon Butt", is_final_boss=True)
+        ]
+        
+        # Roll random stats for each enemy
+        for enemy in enemies:
+            enemy.roll_stats()
+            
+        return enemies
+        
+    def _initialize_rooms(self) -> Dict:
+        """Initialize the dungeon rooms and set enemy stats."""
+        rooms = {
+            'Liminal Space': {
+                'North': 'Mirror Maze',
+                'South': 'Bat Cavern',
+                'East': 'Bazaar',
+                'Description': 'You step into the first chamber of the dungeon, your boots scraping against the rough, uneven stone floor. The air is damp\n'
+                'and heavy, carrying the faint, metallic tang of rust and the acrid bite of mildew. The walls glisten faintly with\n'
+                'moisture, their surfaces etched with marks of age and strange, cryptic symbols worn smooth by time.\n'
+                'The faint sound of water dripping echoes through the chamber, rhythmic and hollow, as if the dungeon itself has a heartbeat.\n\n'
+                'Somewhere in the distance, you think you hear the faint scuttle of claws on stone or the muted whisper of something unseen\n'
+                'shifting in the shadows. A faint draft snakes through the room, cool and clammy against your skin, as though the\n'
+                'dungeon is breathing, its cold exhale brushing past you. The dim light from your torch dances erratically,\n'
+                'casting long, flickering shadows that seem to stretch and writhe across the walls.\n\n'
+                'This place feels alive...watching, waiting, testing your resolve. The adventure has begun!\n'
+                'What will you do next?\n'
+            },
+            'Mirror Maze': {
+                'South': 'Liminal Space',
+                'Item': 'Crystal',
+                'Description': 'A room full of dusty mirrors!',
+                #'Enemy': {'Name': 'Ghoul', 'Health': 0, 'Strength': 0},
+            },
+            'Bat Cavern': {
+                'North': 'Liminal Space',
+                'East': 'Great Hall',
+                'Item': 'Staff',
+                'Description': 'BATS! Everywhere! You are in bat country!',
+                #'Enemy': {'Name': 'Ghost', 'Health': 0, 'Strength': 0},
+            },
+            'Great Hall': {
+                'West': 'Bat Cavern',
+                'Item': 'Sword',
+                'Description': 'The Great Hall is dimly lit by candles placed on stone shelves around the perimeter. '
+                'A large stone slab dominates the center of the room.',
+                #'Enemy': {'Name': 'Goblin', 'Health': 0, 'Strength': 0},
+            },
+            'Bazaar': {
+                'West': 'Liminal Space',
+                'North': 'Pit of Pendulums',
+                'East': 'The Rotten Temple Room',
+                'Item': 'Skull',
+                'Description': 'Abandoned merchant stalls line the walls of this once-bustling marketplace. '
+                'The scent of exotic spices still lingers in the air.',
+                #'Enemy': {'Name': 'Vampire', 'Health': 0, 'Strength': 0},
+            },
+            'Pit of Pendulums': {
+                'South': 'Bazaar',
+                'East': 'Tomb of the Forgotten',
+                'Item': 'Glass Eye of Mystery',
+                'Description': 'Massive metal pendulums swing silently back and forth across this chamber. '
+                'The floor is lined with ominous dark stains.',
+                #'Enemy': {'Name': 'Brigand', 'Health': 0, 'Strength': 0},
+            },
+            'Tomb of the Forgotten': {
+                'West': 'Pit of Pendulums',
+                'Item': 'Heavy Shield',
+                'Description': 'Ancient sarcophagi line the walls of this dusty chamber. '
+                'The names of the deceased have been worn away by time.',
+                #'Enemy': {'Name': 'Black Cat', 'Health': 0, 'Strength': 0},
+            },
+            'The Rotten Temple Room': {
+                'West': 'Bazaar',
+                'Item': 'Treasure Chest',
+                'Description': 'The location description.',
+                #'Enemy': {'Name': 'Dragon Butt', 'Health': 0, 'Strength': 0, 'IsFinalBoss': True},
+            }
+        }
+        
+        # Assign random enemies to rooms (excluding starting room)
+        self._assign_random_enemies(rooms)
+                
+        return rooms
 
-def prompt():
-    print(Fore.GREEN + "\tWelcome, Brave Adventurer!\n\n\
+    def _assign_random_enemies(self, rooms):
+        """Assign random enemies to rooms from the enemy bank"""
+        # Create a copy of enemies that we can shuffle and pop from
+        available_enemies = self.enemy_bank.copy()
+        random.shuffle(available_enemies)
+        
+        # Always put the final boss in the Rotten Temple Room
+        final_boss = next(enemy for enemy in available_enemies if enemy.is_final_boss)
+        available_enemies.remove(final_boss)
+        rooms['The Rotten Temple Room']['Enemy'] = final_boss.to_dict()
+        
+        # Assign other enemies randomly to the remaining rooms (excluding starting room)
+        rooms_needing_enemies = [
+            room for room in rooms 
+            if room != 'Liminal Space' and room != 'The Rotten Temple Room'
+        ]
+        
+        for room_name in rooms_needing_enemies:
+            if available_enemies:
+                enemy = available_enemies.pop()
+                rooms[room_name]['Enemy'] = enemy.to_dict()
+            else:
+                # If we run out of enemies, create a new random one
+                new_enemy = Enemy(name=f"Unknown {random.choice(['Creature', 'Monster', 'Beast'])}")
+                new_enemy.roll_stats()
+                rooms[room_name]['Enemy'] = new_enemy.to_dict()
+
+    @staticmethod
+    def clear():
+        """Clear the terminal screen."""
+        os.system("cls" if os.name == "nt" else "clear")
+
+    @staticmethod
+    def roll_d6():
+        """Simulate a D6 roll."""
+        return random.randint(1, 6)
+
+    @staticmethod
+    def print_slow(text, delay=0.05):
+        """Print text slowly to simulate a typing effect."""
+        for char in text:
+            sys.stdout.write(char)
+            sys.stdout.flush()
+            time.sleep(delay)
+        print()
+
+    def main_menu(self):
+        """Display the main menu and handle navigation."""
+        while True:
+            self.clear()
+            print(f"{Colors.GREEN}~~~~ Welcome to the Dungeon! ~~~~\n"
+                  "1. Begin the adventure\n"
+                  "2. Gameplay & Rules\n"
+                  "3. Commands\n"
+                  "4. Exit\n")
+            choice = input("Enter your selection: ")
+
+            if choice == "1":
+                self.clear()
+                self.prompt()
+                return  # Exit the menu loop
+            elif choice == "2":
+                self.clear()
+                self.display_rules()
+            elif choice == "3":
+                self.clear()
+                self.display_commands()
+            elif choice == "4":
+                self.clear()
+                print(f"{Colors.RED}Exiting the game. Goodbye!{Colors.RESET}")
+                sys.exit()
+            else:
+                self.clear()
+                print(f"{Colors.RED}Invalid selection. Please choose a valid option.\n{Colors.RESET}")
+
+    def prompt(self):
+        """Display the introductory prompt."""
+        print(f"{Colors.GREEN}\tWelcome, Brave Adventurer!\n\n\
 \tYou stand at the threshold of the forgotten dungeon, a labyrinth of peril and mystery.\n\
 Whispers speak of untold treasures guarded by ancient foes, each more deadly than the last.\n\
 To claim victory, you must gather six legendary artifacts, hidden deep within the dungeon, each\n\
@@ -74,299 +244,257 @@ and your resolve, you must navigate through treacherous rooms, face off against 
 unearth the secrets of the dungeon.\n\n\
 \tRoll the dice, make your move, and choose your actions wisely. Will you emerge victorious, or will the\n\
 dungeon claim yet another soul?\n\n\
-The dungeon awaits... let the adventure begin!\n")
+The dungeon awaits... let the adventure begin!\n{Colors.RESET}")
 
-    input(Fore.YELLOW + "\tPress any key to continue ...\n")
+        input(f"{Colors.YELLOW}\tPress any key to continue ...\n{Colors.RESET}")
 
-def display_rules():
-    print(Fore.CYAN + " <<< Gameplay & Rules >>>\n"
-          " ~ You have 30 rounds to explore the dungeon.\n"
-          " ~ Navigate the dungeon to find monsters, treasure, and adventure.\n"
-          " ~ Defeat enemies to collect gold and items.\n"
-          " ~ The game ends when you defeat the final boss or run out of rounds.\n"
-          " ~ In order to unlock the door to the final boss, you must find the key first.\n" )
-    input_with_prompt("Press any key to continue...")
+    def display_rules(self):
+        """Display game rules."""
+        print(f"{Colors.CYAN} <<< Gameplay & Rules >>>\n"
+              " ~ You have 30 rounds to explore the dungeon.\n"
+              " ~ Navigate the dungeon to find monsters, treasure, and adventure.\n"
+              " ~ Defeat enemies to collect gold and items.\n"
+              " ~ The game ends when you defeat the final boss or run out of rounds.\n"
+              " ~ In order to unlock the door to the final boss, you must find the key first.\n")
+        input("Press any key to continue...")
 
-def display_commands():
-    print(Fore.CYAN + " <<< Commands >>>\n"
-          " ~ 'Look': Inspect your current room.\n"
-          " ~ 'Go': Navigate to another room.\n"
-          " ~ 'Attack': Engage in combat with an enemy.\n"
-          " ~ 'Help': Display game rules.\n")
-    input_with_prompt("Press any key to continue...")
+    def display_commands(self):
+        """Display available commands."""
+        print(f"{Colors.CYAN} <<< Commands >>>\n"
+              " ~ 'Look': Inspect your current room.\n"
+              " ~ 'Go [direction]': Navigate to another room (North, South, East, West).\n"
+              " ~ 'Attack': Engage in combat with an enemy in the room.\n"
+              " ~ 'Get [item]': Pick up an item if there's no enemy in the room.\n"
+              " ~ 'Roll': Roll some dice for fun.\n"
+              " ~ 'Help': Display these commands.\n"
+              " ~ 'Rules': Display game rules.\n"
+              " ~ 'Exit': Quit the game.\n")
+        input("Press any key to continue...")
 
-# Gameplay Functions
-def describe_room(current_room):
-    #Generate a description of the current room.
-    description = rooms[current_room].get("Description", "Nothing special here.")
-    exits = [key for key in rooms[current_room] if key not in ROOM_KEYS]
-    exit_str = ", ".join(exits)
-    msg = f"{description}\nExits: {exit_str}"
+    def get_available_exits(self, room_name):
+        """Get available exits from a room."""
+        return [key for key in self.rooms[room_name] if key not in ROOM_KEYS]
 
-    if "Enemy" in rooms[current_room]:
-        enemy = rooms[current_room]["Enemy"]
-        msg += f"\nEnemy: {enemy['Name']} {enemy['Health']}/{enemy['Strength']}"
-    return msg
+    def describe_room(self, room_name):
+        """Generate a description of the current room."""
+        room_data = self.rooms[room_name]
+        description = room_data.get("Description", "Nothing special here.")
+        exits = self.get_available_exits(room_name)
+        exit_str = ", ".join(exits)
+        msg = f"{description}\nExits: {exit_str}"
 
-def combat(player, enemy_name, current_room):
-    if "Enemy" not in rooms[current_room]:
-        print(f"No enemy named {enemy_name} is present in this room.")
-        return False
+        if "Enemy" in room_data:
+            enemy = room_data["Enemy"]
+            msg += f"\nEnemy: {enemy['Name']} {enemy['Health']}/{enemy['Strength']}"
+        return msg
 
-    enemy = rooms[current_room]["Enemy"]
-    print(Fore.RED + f"\nYou have encountered a {enemy_name}!")
-    print(f"Player: {player['Health']} HP / {player['Strength']} STR | {enemy_name}: {enemy['Health']} HP / {enemy['Strength']} STR")
+    def combat(self, enemy_name, room_name):
+        """Handle combat between player and enemy."""
+        room_data = self.rooms[room_name]
+        if "Enemy" not in room_data:
+            return False, f"No enemy named {enemy_name} is present in this room."
 
-    # Initiative Roll
-    input(Fore.YELLOW + "Press Enter to roll for initiative...")
-    player_initiative = roll_d6()
-    enemy_initiative = roll_d6()
-    print(f"\nYou rolled {player_initiative} for initiative!")
-    print(f"The {enemy_name} rolled {enemy_initiative} for initiative!")
+        enemy = room_data["Enemy"]
+        print(f"{Colors.RED}You have encountered a {enemy_name}!")
+        print(f"Player: {self.player.health} HP / {self.player.strength} STR | {enemy_name}: {enemy['Health']} HP / {enemy['Strength']} STR{Colors.RESET}")
 
-    # Determine who attacks first
-    player_turn = player_initiative >= enemy_initiative  # Player goes first on a tie
-    if player_turn:
-        print("You have the initiative and will attack first!")
-    else:
-        print(f"The {enemy_name} has the initiative and will attack first!")
+        # Initiative Roll
+        input(f"{Colors.YELLOW}Press Enter to roll for initiative...{Colors.RESET}")
+        player_initiative = self.roll_d6()
+        enemy_initiative = self.roll_d6()
+        print(f"\nYou rolled {player_initiative} for initiative!")
+        print(f"The {enemy_name} rolled {enemy_initiative} for initiative!")
 
-    # Combat Loop
-    while player["Health"] > 0 and enemy["Health"] > 0:
+        # Determine who attacks first
+        player_turn = player_initiative >= enemy_initiative  # Player goes first on a tie
         if player_turn:
-            # Player's attack
-            input("Press Enter to roll for your attack...")
-            player_roll = roll_d6()
-            player_damage = player_roll * player["Strength"]
-            enemy["Health"] -= player_damage
-            print(f"You rolled {player_roll}! You deal {player_damage} damage to the {enemy_name}.")
-
-            if enemy["Health"] <= 0:
-                print(f"You defeated the {enemy_name}!")
-                # Grant gold to the player
-                if enemy.get("IsFinalBoss", False):
-                    player["Gold"] += 3
-                    print("You defeated the final boss! You earn 3 gold!")
-                else:
-                    player["Gold"] += 1
-                    print("You earn 1 gold!")
-                print(f"Your total gold: {player['Gold']}")
-
-                # Add room item to inventory, if present
-                if "Item" in rooms[current_room]:
-                    item = rooms[current_room]["Item"]
-                    if item not in inventory:
-                        inventory.append(item)
-                        print(f"You found and collected the {item}!")
-
-                # Remove the enemy from the room
-                del rooms[current_room]["Enemy"]
-                return True  # Player wins
+            print("You have the initiative and will attack first!")
         else:
-            # Enemy's attack
-            input(f"The {enemy_name} attacks! Press Enter to roll for defense...")
-            enemy_roll = roll_d6()
-            enemy_damage = enemy_roll * enemy["Strength"]
-            player["Health"] -= enemy_damage
-            print(f"The {enemy_name} rolled {enemy_roll}! It deals {enemy_damage} damage to you.")
+            print(f"The {enemy_name} has the initiative and will attack first!")
 
-            if player["Health"] <= 0:
-                print(f"\nYou have been defeated by the {enemy_name}!")
-                exit()  # Enemy wins and game ends.
+        # Combat Loop
+        while self.player.health > 0 and enemy["Health"] > 0:
+            if player_turn:
+                # Player's attack
+                input("Press Enter to roll for your attack...")
+                player_roll = self.roll_d6()
+                player_damage = player_roll * self.player.strength
+                enemy["Health"] -= player_damage
+                print(f"You rolled {player_roll}! You deal {player_damage} damage to the {enemy_name}.")
 
-        # Switch turns
-        player_turn = not player_turn
+                if enemy["Health"] <= 0:
+                    print(f"You defeated the {enemy_name}!")
+                    # Grant gold to the player
+                    if enemy.get("IsFinalBoss", False):
+                        self.player.gold += 3
+                        print("You defeated the final boss! You earn 3 gold!")
+                    else:
+                        self.player.gold += 1
+                        print("You earn 1 gold!")
+                    print(f"Your total gold: {self.player.gold}")
 
-        # Show updated health after each round
-        print(f"\nYour Health: {player['Health']} | {enemy_name}'s Health: {enemy['Health']}")
+                    # Add room item to inventory, if present
+                    if "Item" in room_data:
+                        item = room_data["Item"]
+                        if item not in self.player.inventory:
+                            self.player.inventory.append(item)
+                            print(f"You found and collected the {item}!")
 
-    return False  # Failsafe if combat ends unexpectedly
+                    # Remove the enemy from the room
+                    del room_data["Enemy"]
+                    return True, f"You defeated the {enemy_name}!"  # Player wins
+            else:
+                # Enemy's attack
+                input(f"The {enemy_name} attacks! Press Enter to roll for defense...")
+                enemy_roll = self.roll_d6()
+                enemy_damage = enemy_roll * enemy["Strength"]
+                self.player.health -= enemy_damage
+                print(f"The {enemy_name} rolled {enemy_roll}! It deals {enemy_damage} damage to you.")
 
-# Initialization
-# Map
-rooms = {
-    'Liminal Space': {
-        'North':'Mirror Maze',
-        'South':'Bat Cavern',
-        'East':'Bazaar',
-        'Description':'You step into the first chamber of the dungeon, your boots scraping against the rough, uneven stone floor. The air is damp\n'
-        'and heavy, carrying the faint, metallic tang of rust and the acrid bite of mildew. The walls glisten faintly with\n'
-        'moisture, their surfaces etched with marks of age and strange, cryptic symbols worn smooth by time.\n'
-        'The faint sound of water dripping echoes through the chamber, rhythmic and hollow, as if the dungeon itself has a heartbeat.\n\n'
-        'Somewhere in the distance, you think you hear the faint scuttle of claws on stone or the muted whisper of something unseen\n'
-        'shifting in the shadows. A faint draft snakes through the room, cool and clammy against your skin, as though the\n'
-        'dungeon is breathing, its cold exhale brushing past you. The dim light from your torch dances erratically,\n'
-        'casting long, flickering shadows that seem to stretch and writhe across the walls.\n\n'
-        'This place feels alive...watching, waiting, testing your resolve. The adventure has begun!\n'
-        'What will you do next?\n'
-    },
-    'Mirror Maze': {
-        'South':'Liminal Space',
-        'Item':'Crystal',
-        'Description':'A room full of dusty mirrors!',
-        'Enemy':{'Name': 'Ghoul', 'Health':0, 'Strength': 0},
-    },
-    'Bat Cavern': {
-        'North':'Liminal Space',
-        'East':'Great Hall',
-        'Item':'Staff',
-        'Description':'BATS! Everywhere! You are in bat country!',
-        'Enemy':{'Name': 'Ghost', 'Health':0, 'Strength': 0},
-    },
-    'Great Hall': {
-        'West':'Bat Cavern',
-        'Item':'Sword',
-        'Description':'The Great Hall is dimly lit by candles placed on stone shelves around the perimeter.'
-        'You see a Goblin seated on large stone slab. He\'s seen you and you make eye contact.',
-        'Enemy':{'Name': 'Goblin', 'Health':0, 'Strength': 0},
-    },
-    'Bazaar': {
-        'West':'Liminal Space',
-        'North':'Pit of Pendulums',
-        'East':'The Rotten Temlpe Room',
-        'Item':'Skull',
-        'Description':'The bazaar location description.',
-        'Enemy':{'Name': 'Vampire', 'Health': 0, 'Strength': 0},
-    },
-    'Pit of Pendulums': {
-        'South':'Bazaar',
-        'East':'Tomb of the Forgotten',
-        'Item':'Glass Eye of Mystery',
-        'Description':'The location description.',
-        'Enemy':{'Name': 'Brigand', 'Health': 0, 'Strength': 0},
-    },
-    'Tomb of the Forgotten': {
-        'West':'Pit of Pendulums',
-        'Item':'Heavy Shield',
-        'Description':'The location description.',
-        'Enemy':{'Name': 'Black Cat', 'Health': 0, 'Strength': 0},
-    },
-    'The Rotten Temlpe Room': {
-        'East':'Bazaar',
-        'Item':'Treasure Chest',
-        'Description':'The location description.',
-        'Enemy':{'Name': 'Dragon Butt', 'Health': 0, 'Strength': 0, 'IsFinalBoss':True},
-    }
-    }
+                if self.player.health <= 0:
+                    print(f"\nYou have succumbed to a fatal blow and been defeated by the {enemy_name}!")
+                    print("~~~ Game Over ~~~")
+                    sys.exit()
 
-# Initialize enemy stats
-for room, details in rooms.items():
-    if 'Enemy' in details:
-        details['Enemy']['Health'] = roll_d6()
-        details['Enemy']['Strength'] = roll_d6()
+            # Switch turns
+            player_turn = not player_turn
 
-player = {"Health": 5, "Strength": 5, "Gold": 0}
-inventory = []
-current_room = "Liminal Space"
-round_number = 1
-total_rounds = 30
-msg= "" 
+            # Show updated health after each round
+            print(f"\nYour Health: {self.player.health} | {enemy_name}'s Health: {enemy['Health']}")
 
+        return False, "Combat ended unexpectedly."  # Failsafe if combat ends unexpectedly
 
-# Game Loop
-def game_loop():
-    global round_number, current_room, player_health, player_strength, total_rounds, msg, gold  # Use the global round number
-    
-    while round_number <= total_rounds:  # Loop until all rounds are completed
-        clear()
-        # Display room information
-        description = rooms[current_room].get("Description", "You see nothing special here.")
-        print(description + f"\n{'--' * 17}")
-
-        # Display player information
-        print(Fore.GREEN + f"Current Room: {current_room} ~~ Round: {round_number}/{total_rounds}\nHealth: {player['Health']} \
-Strength: {player['Strength']} Gold: {player['Gold']} Loot: {inventory}\n{'--' * 17}\n")
-
-        # Display the latest message
-        print(msg)
-
-        # Handle nearby items
-        if "Item" in rooms[current_room].keys():
-            nearby_item = rooms[current_room]["Item"]
-
-        # Accept player input for move
-        user_input = input("Enter your move: \n")
-
-        # Split move into words
-        next_move = user_input.split(' ')
-
-        # First word is action
-        action = next_move[0].title()
-
-        if len(next_move) > 1:
-            item = next_move[1:]
-            direction = next_move[1].title()
-
-            item = ' '.join(item).title()
-
-        # Check if the game is over
-        if round_number > total_rounds:
-            print("Game over! You've completed all 30 rounds.")
-            break
-
-        # Handle actions
+    def process_action(self, action, params=None):
+        """Process player action."""
         if action == "Go":
-            try:
-                current_room = rooms[current_room][direction]
-                msg = f"You have traveled {direction} to the {current_room}."
-            except KeyError:
-                msg = f"You can't go that way."
-            round_number += 1
+            if params and params[0] in self.get_available_exits(self.current_room):
+                direction = params[0]
+                self.current_room = self.rooms[self.current_room][direction]
+                self.round_number += 1
+                return f"You have traveled {direction} to the {self.current_room}."
+            return "You can't go that way."
 
         elif action == "Help":
-            display_commands()
+            self.display_commands()
+            return "Commands displayed."
 
         elif action == "Rules":
-            display_rules()
-
+            self.display_rules()
+            return "Rules displayed."
 
         elif action == "Look":
-            description = rooms[current_room].get("Description", "You see nothing special here.")
-            exits = [key for key in rooms[current_room].keys() if key not in ["Item", "Enemy", "Description"]]
+            exits = self.get_available_exits(self.current_room)
             exit_str = ", ".join(exits)
-            msg = f"{description}\n{CYAN}Exits: {exit_str}{RESET}"
+            msg = f"{Colors.CYAN}Exits: {exit_str}{Colors.RESET}"
 
-            if "Item" in rooms[current_room]:
-                item = rooms[current_room]["Item"]
-                msg += f"\nYou see a {item} here."
+            if "Item" in self.rooms[self.current_room]:
+                item = self.rooms[self.current_room]["Item"]
+                msg += f"{Colors.CYAN}\nYou see a {item} here.{Colors.RESET}"
 
-            if "Enemy" in rooms[current_room]:
-                enemy = rooms[current_room]["Enemy"]
+            if "Enemy" in self.rooms[self.current_room]:
+                enemy = self.rooms[self.current_room]["Enemy"]
                 if isinstance(enemy, dict):
                     msg += f"\nEnemy: {enemy['Name']} {enemy['Health']}/{enemy['Strength']}"
+            return msg
 
         elif action == "Attack":
-            if "Enemy" in rooms[current_room]:
-                enemy = rooms[current_room]["Enemy"]
-                victory = combat(player, enemy["Name"], current_room)
+            if "Enemy" in self.rooms[self.current_room]:
+                enemy = self.rooms[self.current_room]["Enemy"]
+                item = self.rooms[self.current_room].get("Item", "unknown treasure")
+                victory, combat_msg = self.combat(enemy["Name"], self.current_room)
+                self.round_number += 1
                 if victory:
-                    msg = f"You defeated {enemy['Name']} and claimed the room's treasure!"
-            else:
-                msg = "No enemy here to attack."
-            round_number += 1
+                    return f"You defeated the {enemy['Name']}! \nYour reward for victory is one gold and you have claimed the {item}!"
+                return combat_msg
+            return "No enemy here to attack."
 
         elif action == "Roll":
-            rolls = [random.randint(1, 6) for _ in range(4)]
-            msg = f"Dice Rolls: {', '.join(map(str, rolls))}"
+            rolls = [self.roll_d6() for _ in range(4)]
+            return f"Dice Rolls: {', '.join(map(str, rolls))}"
+
+        elif action == "Get":
+            if params and "Item" in self.rooms[self.current_room]:
+                item = self.rooms[self.current_room]["Item"]
+                if ' '.join(params).title() == item:
+                    if item not in self.player.inventory:
+                        if "Enemy" in self.rooms[self.current_room]:
+                            return "You must defeat the enemy first!"
+                        self.player.inventory.append(item)
+                        return f"{item} retrieved!"
+                    return f"You already have the {item}."
+            return f"Can't find that item."
 
         elif action == "Exit":
-            break
+            self.clear()
+            print(f"{Colors.RED}Exiting the game. Goodbye!{Colors.RESET}")
+            sys.exit()
 
-                # Action:GET on hold, building this into a playable interaction with the enemy...
-        # elif action == "Get":
-        #     try:
-        #         if item == rooms[current_room]["Item"]:
-        #             if item not in inventory:
-        #                 inventory.append(item)
-        #                 msg = f"{item} retrieved!"
-        #             else:
-        #                 msg = f"You already have the {item}."
-        #         else:
-        #             msg = f"Can't find {item}."
-        #     except KeyError:
-        #         msg = f"Can't find {item}."
+        return "Invalid Command"
 
-        else:
-            msg = "Invalid Command"
-main_menu()
-game_loop()
+    def restart_game(self):
+        """Reset the game with new random enemies"""
+        self.player = Player(health=5, strength=5, gold=0, inventory=[])
+        self.current_room = "Liminal Space"
+        self.round_number = 1
+        self.message = ""
+        self.enemy_bank = self._create_enemy_bank()
+        self.rooms = self._initialize_rooms()
+
+    def game_loop(self):
+        """Main game loop."""
+        while self.round_number <= self.total_rounds:
+            self.clear()
+            
+            # Display room information
+            description = self.rooms[self.current_room].get("Description", "You see nothing special here.")
+            print(description + f"\n{'--' * 17}")
+
+            # Display player information
+            print(f"{Colors.GREEN}Current Room: {self.current_room} \nRound: {self.round_number}/{self.total_rounds}\n"
+                  f"Health: {self.player.health} Strength: {self.player.strength} Gold: {self.player.gold} "
+                  f"Loot: {self.player.inventory}\n{'--' * 17}\n{Colors.RESET}")
+
+            # Display the latest message
+            print(self.message)
+
+            # Accept player input for move
+            user_input = input(f"{Colors.YELLOW}Enter your move: \n{Colors.RESET}")
+            
+            # Split move into words and parse
+            parts = user_input.split()
+            if not parts:
+                self.message = "Please enter a command."
+                continue
+                
+            action = parts[0].title()
+            params = [p.title() for p in parts[1:]] if len(parts) > 1 else None
+            
+            self.message = self.process_action(action, params)
+            
+            # Check if the game is over
+            if self.round_number > self.total_rounds:
+                print("Game over! You've completed all 30 rounds.")
+
+                play_again = input("Would you like to play again? (y/n): ")
+                if play_again.lower() == 'y':
+                    self.restart_game()
+                else:
+                    break
+                
+            # Check if player has defeated the final boss
+            if "The Rotten Temple Room" in self.rooms and "Enemy" not in self.rooms["The Rotten Temple Room"]:
+                print(f"{Colors.GREEN}Congratulations! You've defeated the final boss and won the game!{Colors.RESET}")
+                
+                play_again = input("Would you like to play again? (y/n): ")
+                if play_again.lower() == 'y':
+                    self.restart_game()
+                else:
+                    break
+
+def main():
+    game = DungeonGame()
+    game.main_menu()
+    game.game_loop()
+
+if __name__ == "__main__":
+    main()
