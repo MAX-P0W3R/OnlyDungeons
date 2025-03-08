@@ -24,6 +24,8 @@ class Enemy:
     health: int = 0
     strength: int = 0
     is_final_boss: bool = False
+    has_key: bool = False
+
     def roll_stats(self):
         """Roll random stats for the enemy"""
         self.health = random.randint(1, 6)
@@ -35,7 +37,8 @@ class Enemy:
             'Name': self.name,
             'Health': self.health,
             'Strength': self.strength,
-            'IsFinalBoss': self.is_final_boss
+            'IsFinalBoss': self.is_final_boss,
+            'HasKey': self.has_key
         }    
 
 @dataclass
@@ -44,6 +47,7 @@ class Player:
     strength: int
     gold: int
     inventory: List[str]
+    has_key: bool = False
 
 class DungeonGame:
     def __init__(self):
@@ -52,8 +56,29 @@ class DungeonGame:
         self.round_number = 1
         self.total_rounds = 30
         self.message = ""
+        self.treasures = self._create_treasure_list()
         self.enemy_bank = self._create_enemy_bank()
         self.rooms = self._initialize_rooms()
+
+    def _create_treasure_list(self) -> List[str]:
+        """Create a list of possible treasures to be randomly assigned to rooms"""
+        return [
+            "Crystal",
+            "Staff",
+            "Sword",
+            "Skull",
+            "Glass Eye of Mystery",
+            "Heavy Shield",
+            "Ancient Amulet",
+            "Enchanted Dagger",
+            "Golden Chalice",
+            "Magic Scroll",
+            "Spectral Orb",
+            "Dragon Scale",
+            "Mystic Gem",
+            "Runic Tablet",
+            "Treasure Chest"
+        ]
 
     def _create_enemy_bank(self) -> List[Enemy]:
         """Create a bank of enemies that can be assigned to rooms"""
@@ -79,6 +104,10 @@ class DungeonGame:
         # Roll random stats for each enemy
         for enemy in enemies:
             enemy.roll_stats()
+
+        # Randomly select one non-boss enemy to have the key
+        key_holder = random.choice([e for e in enemies if not e.is_final_boss])
+        key_holder.has_key = True
             
         return enemies
         
@@ -152,21 +181,53 @@ class DungeonGame:
             }
         }
         
+        # Assign random treasures to rooms (excluding starting room and final boss room)
+        self._assign_random_treasures(rooms)
+
         # Assign random enemies to rooms (excluding starting room)
         self._assign_random_enemies(rooms)
                 
         return rooms
 
+    def _assign_random_treasures(self, rooms):
+        """Assign random treasures to rooms"""
+        # Create a copy of treasures that we can shuffle and pop from
+        available_treasures = self.treasures.copy()
+        random.shuffle(available_treasures)
+        
+        # Always put a special treasure in the final boss room
+        if available_treasures:
+            final_treasure = "Treasure Chest"  # Always a treasure chest in the boss room
+            rooms['The Rotten Temple Room']['Item'] = final_treasure
+            if final_treasure in available_treasures:
+                available_treasures.remove(final_treasure)
+        
+        # Assign other treasures randomly to the remaining rooms (excluding starting room)
+        rooms_for_treasures = [
+            room for room in rooms 
+            if room != 'Liminal Space' and room != 'The Rotten Temple Room'
+        ]
+        
+        for room_name in rooms_for_treasures:
+            if available_treasures:
+                treasure = available_treasures.pop()
+                rooms[room_name]['Item'] = treasure
+
     def _assign_random_enemies(self, rooms):
         """Assign random enemies to rooms from the enemy bank"""
         # Create a copy of enemies that we can shuffle and pop from
         available_enemies = self.enemy_bank.copy()
-        random.shuffle(available_enemies)
         
         # Always put the final boss in the Rotten Temple Room
         final_boss = next(enemy for enemy in available_enemies if enemy.is_final_boss)
         available_enemies.remove(final_boss)
         rooms['The Rotten Temple Room']['Enemy'] = final_boss.to_dict()
+        
+        # Find the enemy with the key
+        key_holder = next(enemy for enemy in available_enemies if enemy.has_key)
+        
+        # Shuffle the remaining enemies
+        random.shuffle([e for e in available_enemies if e != key_holder])
         
         # Assign other enemies randomly to the remaining rooms (excluding starting room)
         rooms_needing_enemies = [
@@ -174,6 +235,14 @@ class DungeonGame:
             if room != 'Liminal Space' and room != 'The Rotten Temple Room'
         ]
         
+        # Make sure key holder is assigned to a random room
+        if rooms_needing_enemies:
+            key_room = random.choice(rooms_needing_enemies)
+            rooms[key_room]['Enemy'] = key_holder.to_dict()
+            rooms_needing_enemies.remove(key_room)
+            available_enemies.remove(key_holder)
+        
+        # Assign remaining enemies
         for room_name in rooms_needing_enemies:
             if available_enemies:
                 enemy = available_enemies.pop()
@@ -286,6 +355,11 @@ The dungeon awaits... let the adventure begin!\n{Colors.RESET}")
         if "Enemy" in room_data:
             enemy = room_data["Enemy"]
             msg += f"\nEnemy: {enemy['Name']} {enemy['Health']}/{enemy['Strength']}"
+
+        if "Item" in room_data:
+            item = room_data["Item"]
+            msg += f"\nItem: {item}"
+
         return msg
 
     def combat(self, enemy_name, room_name):
@@ -333,6 +407,12 @@ The dungeon awaits... let the adventure begin!\n{Colors.RESET}")
                         print("You earn 1 gold!")
                     print(f"Your total gold: {self.player.gold}")
 
+                    # Check if enemy had the key
+                    if enemy.get("HasKey", False):
+                        self.player.has_key = True
+                        self.player.inventory.append("Dungeon Key")
+                        print(f"{Colors.YELLOW}You found a key on the {enemy_name}! This will allow you to enter the final boss room.{Colors.RESET}")
+
                     # Add room item to inventory, if present
                     if "Item" in room_data:
                         item = room_data["Item"]
@@ -369,7 +449,17 @@ The dungeon awaits... let the adventure begin!\n{Colors.RESET}")
         if action == "Go":
             if params and params[0] in self.get_available_exits(self.current_room):
                 direction = params[0]
-                self.current_room = self.rooms[self.current_room][direction]
+                next_room = self.rooms[self.current_room][direction]
+                
+                # Check if the player is trying to enter the locked boss room
+                if next_room == "The Rotten Temple Room" and self.rooms[next_room].get("Locked", False):
+                    if not self.player.has_key:
+                        return f"{Colors.RED}The door to {next_room} is locked. You need to find a key.{Colors.RESET}"
+                    else:
+                        print(f"{Colors.GREEN}You use the key to unlock the door to {next_room}.{Colors.RESET}")
+                        self.rooms[next_room]["Locked"] = False
+                
+                self.current_room = next_room
                 self.round_number += 1
                 return f"You have traveled {direction} to the {self.current_room}."
             return "You can't go that way."
@@ -383,19 +473,8 @@ The dungeon awaits... let the adventure begin!\n{Colors.RESET}")
             return "Rules displayed."
 
         elif action == "Look":
-            exits = self.get_available_exits(self.current_room)
-            exit_str = ", ".join(exits)
-            msg = f"{Colors.CYAN}Exits: {exit_str}{Colors.RESET}"
-
-            if "Item" in self.rooms[self.current_room]:
-                item = self.rooms[self.current_room]["Item"]
-                msg += f"{Colors.CYAN}\nYou see a {item} here.{Colors.RESET}"
-
-            if "Enemy" in self.rooms[self.current_room]:
-                enemy = self.rooms[self.current_room]["Enemy"]
-                if isinstance(enemy, dict):
-                    msg += f"\nEnemy: {enemy['Name']} {enemy['Health']}/{enemy['Strength']}"
-            return msg
+            description = self.describe_room(self.current_room)
+            return f"{Colors.CYAN}{description}{Colors.RESET}"
 
         elif action == "Attack":
             if "Enemy" in self.rooms[self.current_room]:
@@ -404,7 +483,10 @@ The dungeon awaits... let the adventure begin!\n{Colors.RESET}")
                 victory, combat_msg = self.combat(enemy["Name"], self.current_room)
                 self.round_number += 1
                 if victory:
-                    return f"You defeated the {enemy['Name']}! \nYour reward for victory is one gold and you have claimed the {item}!"
+                    if "HasKey" in enemy and enemy["HasKey"]:
+                        return f"You defeated the {enemy['Name']}! \nYou found a key and claimed the {item}!"
+                    else:
+                        return f"You defeated the {enemy['Name']}! \nYour reward for victory is one gold and you have claimed the {item}!"
                 return combat_msg
             return "No enemy here to attack."
 
@@ -429,6 +511,11 @@ The dungeon awaits... let the adventure begin!\n{Colors.RESET}")
             print(f"{Colors.RED}Exiting the game. Goodbye!{Colors.RESET}")
             sys.exit()
 
+        elif action == "Inventory" or action == "I":
+            if self.player.inventory:
+                return f"Your inventory: {', '.join(self.player.inventory)}"
+            return "Your inventory is empty."
+
         return "Invalid Command"
 
     def restart_game(self):
@@ -437,6 +524,7 @@ The dungeon awaits... let the adventure begin!\n{Colors.RESET}")
         self.current_room = "Liminal Space"
         self.round_number = 1
         self.message = ""
+        self.treasures = self._create_treasure_list()
         self.enemy_bank = self._create_enemy_bank()
         self.rooms = self._initialize_rooms()
 
@@ -451,8 +539,9 @@ The dungeon awaits... let the adventure begin!\n{Colors.RESET}")
 
             # Display player information
             print(f"{Colors.GREEN}Current Room: {self.current_room} \nRound: {self.round_number}/{self.total_rounds}\n"
-                  f"Health: {self.player.health} Strength: {self.player.strength} Gold: {self.player.gold} "
-                  f"Loot: {self.player.inventory}\n{'--' * 17}\n{Colors.RESET}")
+                  f"Health: {self.player.health} Strength: {self.player.strength} Gold: {self.player.gold}\n"
+                  f"Loot: {self.player.inventory} Key: {'Yes' if self.player.has_key else 'No'}\n{'--' * 17}\n{Colors.RESET} ")
+                  
 
             # Display the latest message
             print(self.message)
