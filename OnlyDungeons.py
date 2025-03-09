@@ -12,11 +12,11 @@ ROOM_KEYS = {"Item", "Enemy", "Description"}  # Using a set for faster lookups
 class Colors:
     CYAN = '\033[96m'
     GREEN = '\033[92m'
-    RED = '\033[91m'  # Fixed missing bracket
+    RED = '\033[91m'  
     YELLOW = '\033[93m'
     BLUE = '\033[94m'
     MAGENTA = '\033[95m'
-    RESET = '\033[0m'  # Fixed to proper reset
+    RESET = '\033[92m'  
 
 @dataclass
 class Enemy:
@@ -315,7 +315,7 @@ unearth the secrets of the dungeon.\n\n\
 dungeon claim yet another soul?\n\n\
 The dungeon awaits... let the adventure begin!\n{Colors.RESET}")
 
-        input(f"{Colors.YELLOW}\tPress any key to continue ...\n{Colors.RESET}")
+        input(f"{Colors.YELLOW}\tPress ENTER to continue ...\n{Colors.RESET}")
 
     def display_rules(self):
         """Display game rules."""
@@ -325,7 +325,7 @@ The dungeon awaits... let the adventure begin!\n{Colors.RESET}")
               " ~ Defeat enemies to collect gold and items.\n"
               " ~ The game ends when you defeat the final boss or run out of rounds.\n"
               " ~ In order to unlock the door to the final boss, you must find the key first.\n")
-        input("Press any key to continue...")
+        input("Press ENTER to continue...")
 
     def display_commands(self):
         """Display available commands."""
@@ -338,7 +338,7 @@ The dungeon awaits... let the adventure begin!\n{Colors.RESET}")
               " ~ 'Help': Display these commands.\n"
               " ~ 'Rules': Display game rules.\n"
               " ~ 'Exit': Quit the game.\n")
-        input("Press any key to continue...")
+        input("Press ENTER to continue...")
 
     def get_available_exits(self, room_name):
         """Get available exits from a room."""
