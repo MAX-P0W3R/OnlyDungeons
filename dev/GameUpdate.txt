@@ -1,0 +1,49 @@
+# To update the game:
+
+```bash
+# On your dev machine: push changes to GitHub
+git add .
+git commit -m "Added new dungeon area"
+git push
+
+# On Pi 3: pull and restart
+ssh pi@pi3.local "/home/pi/adventure-game/update.sh"
+
+# Or automate with Ansible:
+ansible-playbook -i inventory.yml playbooks/update-game.yml
+```
+
+Ansible Playbook for updates:
+
+```bash
+# ansible/playbooks/update-game.yml
+---
+- name: Update Adventure Game
+  hosts: pi3_nginx
+  become: no
+  
+  tasks:
+    - name: Pull latest code
+      git:
+        repo: 'https://github.com/yourusername/adventure-game.git'
+        dest: /home/pi/adventure-game
+        version: main
+        force: yes
+    
+    - name: Install/update dependencies
+      pip:
+        requirements: /home/pi/adventure-game/requirements.txt
+        virtualenv: /home/pi/adventure-game/venv
+        virtualenv_command: python3 -m venv
+    
+    - name: Restart game service
+      become: yes
+      systemd:
+        name: adventure-game
+        state: restarted
+    
+    - name: Wait for service to be ready
+      wait_for:
+        port: 5000
+        delay: 2
+```

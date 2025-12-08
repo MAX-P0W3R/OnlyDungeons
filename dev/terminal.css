@@ -1,0 +1,125 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background: #0a0a0a;
+    color: #00ff00;
+    font-family: 'Courier New', monospace;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
+
+.terminal-container {
+    width: 100%;
+    max-width: 900px;
+    height: 600px;
+    background: #1a1a1a;
+    border: 2px solid #00ff00;
+    border-radius: 8px;
+    box-shadow: 0 0 30px rgba(0, 255, 0, 0.3);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.terminal-header {
+    background: #0d0d0d;
+    padding: 10px 15px;
+    border-bottom: 1px solid #00ff00;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.terminal-title {
+    font-weight: bold;
+    letter-spacing: 2px;
+}
+
+.terminal-header button {
+    background: transparent;
+    border: 1px solid #00ff00;
+    color: #00ff00;
+    padding: 5px 15px;
+    cursor: pointer;
+    font-family: 'Courier New', monospace;
+    margin-left: 10px;
+}
+
+.terminal-header button:hover {
+    background: #00ff00;
+    color: #000;
+}
+
+.terminal-output {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+    line-height: 1.6;
+}
+
+.output-line {
+    margin-bottom: 8px;
+    white-space: pre-wrap;
+}
+
+.terminal-input-container {
+    display: flex;
+    padding: 15px;
+    background: #0d0d0d;
+    border-top: 1px solid #00ff00;
+}
+
+.prompt {
+    color: #00ff00;
+    margin-right: 10px;
+    font-weight: bold;
+}
+
+.terminal-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: #00ff00;
+    font-family: 'Courier New', monospace;
+    font-size: 16px;
+    outline: none;
+}
+
+.terminal-input::placeholder {
+    color: #006600;
+}
+
+/* Scrollbar styling */
+.terminal-output::-webkit-scrollbar {
+    width: 10px;
+}
+
+.terminal-output::-webkit-scrollbar-track {
+    background: #0d0d0d;
+}
+
+.terminal-output::-webkit-scrollbar-thumb {
+    background: #00ff00;
+}
+
+/* Blinking cursor effect */
+.terminal-input {
+    caret-color: #00ff00;
+}
+
+/* Boot sequence animation */
+.boot-sequence p {
+    animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
