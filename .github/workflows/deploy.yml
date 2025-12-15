@@ -1,0 +1,44 @@
+# .github/workflows/deploy.yml
+name: Deploy to Raspberry Pi
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Deploy to Raspberry Pi
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.PI_HOST }}
+        username: pi
+        key: ${{ secrets.PI_SSH_KEY }}
+        script: |
+          cd /opt/dailydungeon
+          export COMMIT_SHA=${{ github.sha }}
+          ./deploy.sh
+          
+    - name: Check deployment status
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.PI_HOST }}
+        username: nigil
+        key: ${{ secrets.PI_SSH_KEY }}
+        script: |
+          systemctl is-active dailydungeon
+          curl -f http://localhost:5000/health || exit 1
+          
+    - name: Notify on success
+      if: success()
+      run: echo "✅ Deployment successful!"
+      
+    - name: Notify on failure
+      if: failure()
+      run: echo "❌ Deployment failed!"
