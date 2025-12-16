@@ -3,61 +3,207 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OnlyDungeons</title>
-    <style>
-        body {
-            background: #000;
-            color: #0f0;
-            font-family: 'Courier New', monospace;
-            padding: 20px;
-        }
-        .terminal {
-            max-width: 800px;
-            margin: 0 auto;
-        }
-        #output {
-            min-height: 400px;
-            margin-bottom: 20px;
-            white-space: pre-wrap;
-        }
-        input {
-            background: #000;
-            color: #0f0;
-            border: 1px solid #0f0;
-            padding: 10px;
-            width: 100%;
-            font-family: 'Courier New', monospace;
-        }
-    </style>
+    <title>OnlyDungeons - A Text Adventure</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/terminal.css') }}">
 </head>
 <body>
-    <div class="terminal">
-        <h1>OnlyDungeons</h1>
-        <div id="output">Welcome to OnlyDungeons!
-Type 'help' for commands.
-> </div>
-        <input type="text" id="input" autofocus>
+    <div class="terminal-container">
+        <div class="terminal-header">
+            <div class="header-left">
+                <span class="terminal-title">🏰 ONLYDUNGEONS.EXE</span>
+            </div>
+            <div class="header-right">
+                <span id="health-display">❤️ HP: <span id="health">--</span></span>
+                <span id="gold-display">💰 Gold: <span id="gold">--</span></span>
+                <span id="round-display">🎲 Round: <span id="round">--</span></span>
+            </div>
+        </div>
+        
+        <div id="terminal-output" class="terminal-output">
+            <div class="boot-sequence">
+                <p>═══════════════════════════════════════════════════════════</p>
+                <p>          WELCOME TO ONLYDUNGEONS v1.0</p>
+                <p>          A Text-Based Dungeon Adventure</p>
+                <p>═══════════════════════════════════════════════════════════</p>
+                <p>&nbsp;</p>
+                <p>Loading dungeon data...</p>
+                <p>Initializing enemies...</p>
+                <p>Placing treasures...</p>
+                <p>&nbsp;</p>
+                <p class="success">✓ System ready!</p>
+                <p>&nbsp;</p>
+                <p>Type <span class="highlight">'new'</span> to start a new game</p>
+                <p>Type <span class="highlight">'help'</span> for available commands</p>
+            </div>
+        </div>
+        
+        <div class="terminal-input-container">
+            <span class="prompt">&gt;</span>
+            <input 
+                type="text" 
+                id="command-input" 
+                class="terminal-input" 
+                autocomplete="off"
+                autofocus
+                placeholder="Enter command..."
+            >
+        </div>
+        
+        <div class="status-bar">
+            <span id="room-display">Room: <span id="current-room">--</span></span>
+            <span id="inventory-display">Inventory: <span id="inventory">Empty</span></span>
+        </div>
     </div>
 
     <script>
-        const input = document.getElementById('input');
-        const output = document.getElementById('output');
-
-        input.addEventListener('keypress', async (e) => {
-            if (e.key === 'Enter') {
-                const command = input.value;
-                output.textContent += command + '\n';
-                input.value = '';
-
+        const output = document.getElementById('terminal-output');
+        const input = document.getElementById('command-input');
+        const healthSpan = document.getElementById('health');
+        const goldSpan = document.getElementById('gold');
+        const roundSpan = document.getElementById('round');
+        const roomSpan = document.getElementById('current-room');
+        const inventorySpan = document.getElementById('inventory');
+        
+        let gameActive = false;
+        
+        function appendOutput(text, className = 'output-line') {
+            const lines = text.split('\n');
+            lines.forEach(line => {
+                const div = document.createElement('div');
+                div.className = className;
+                div.textContent = line || '\u00A0'; // Non-breaking space for empty lines
+                output.appendChild(div);
+            });
+            output.scrollTop = output.scrollHeight;
+        }
+        
+        function updateUI(data) {
+            if (data.player) {
+                healthSpan.textContent = data.player.health;
+                goldSpan.textContent = data.player.gold;
+                
+                if (data.player.inventory && data.player.inventory.length > 0) {
+                    inventorySpan.textContent = data.player.inventory.join(', ');
+                } else {
+                    inventorySpan.textContent = 'Empty';
+                }
+            }
+            
+            if (data.round) {
+                roundSpan.textContent = data.round;
+            }
+            
+            if (data.room) {
+                roomSpan.textContent = data.room;
+            }
+        }
+        
+        async function startNewGame() {
+            try {
+                const response = await fetch('/api/game/new', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                const data = await response.json();
+                
+                // Clear output except boot sequence
+                output.innerHTML = '';
+                
+                appendOutput(data.output, 'game-text');
+                appendOutput(''); // Empty line
+                updateUI(data);
+                gameActive = true;
+                
+            } catch (error) {
+                appendOutput('❌ Error starting game: ' + error.message, 'error-text');
+            }
+        }
+        
+        async function sendCommand(command) {
+            try {
                 const response = await fetch('/api/game/command', {
                     method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({command})
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ command })
                 });
-
+                
                 const data = await response.json();
-                output.textContent += data.output + '\n> ';
-                output.scrollTop = output.scrollHeight;
+                
+                // Display response
+                appendOutput(data.output, data.error ? 'error-text' : 'game-text');
+                appendOutput(''); // Empty line
+                
+                // Update UI
+                updateUI(data);
+                
+                // Check for game over
+                if (data.game_over) {
+                    if (data.victory) {
+                        appendOutput('═══════════════════════════════════════', 'success');
+                        appendOutput('🎉 VICTORY! You have conquered the dungeon!', 'success');
+                        appendOutput('═══════════════════════════════════════', 'success');
+                    } else {
+                        appendOutput('═══════════════════════════════════════', 'error-text');
+                        appendOutput('💀 GAME OVER - You have been defeated', 'error-text');
+                        appendOutput('═══════════════════════════════════════', 'error-text');
+                    }
+                    appendOutput('');
+                    appendOutput("Type 'new' to start a new game");
+                    gameActive = false;
+                }
+                
+            } catch (error) {
+                appendOutput('❌ Error: ' + error.message, 'error-text');
+            }
+        }
+        
+        input.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                const command = this.value.trim();
+                if (!command) return;
+                
+                // Echo command
+                appendOutput('> ' + command, 'user-command');
+                this.value = '';
+                
+                // Handle special commands
+                if (command.toLowerCase() === 'new') {
+                    startNewGame();
+                } else if (command.toLowerCase() === 'clear') {
+                    output.innerHTML = '';
+                } else {
+                    sendCommand(command);
+                }
+            }
+        });
+        
+        // Keep input focused
+        document.addEventListener('click', () => input.focus());
+        
+        // Command history
+        let commandHistory = [];
+        let historyIndex = -1;
+        
+        input.addEventListener('keydown', function(e) {
+            if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                if (historyIndex < commandHistory.length - 1) {
+                    historyIndex++;
+                    this.value = commandHistory[commandHistory.length - 1 - historyIndex];
+                }
+            } else if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                if (historyIndex > 0) {
+                    historyIndex--;
+                    this.value = commandHistory[commandHistory.length - 1 - historyIndex];
+                } else {
+                    historyIndex = -1;
+                    this.value = '';
+                }
+            } else if (e.key === 'Enter' && this.value.trim()) {
+                commandHistory.push(this.value.trim());
+                historyIndex = -1;
             }
         });
     </script>

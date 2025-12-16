@@ -1,94 +1,70 @@
 from flask import Flask, render_template, request, session, jsonify
 from config import config
 import os
-import sqlite3
-from pathlib import Path
+from game.engine import GameEngine
 
 def create_app(config_name='default'):
     app = Flask(__name__)
     app.config.from_object(config[config_name])
-    
-    # Ensure data directory exists
-    Path('data').mkdir(exist_ok=True)
-    
     return app
 
 app = create_app(os.environ.get('FLASK_ENV', 'production'))
-
-def get_db():
-    """Get database connection"""
-    db = sqlite3.connect(app.config['DATABASE_PATH'])
-    db.row_factory = sqlite3.Row
-    return db
-
-def init_db():
-    """Initialize database with tables"""
-    db = get_db()
-    
-    # Players table
-    db.execute('''
-        CREATE TABLE IF NOT EXISTS players (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT UNIQUE NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    ''')
-    
-    # Game sessions table
-    db.execute('''
-        CREATE TABLE IF NOT EXISTS game_sessions (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            player_id INTEGER,
-            current_room TEXT,
-            inventory TEXT,
-            health INTEGER DEFAULT 100,
-            gold INTEGER DEFAULT 0,
-            last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (player_id) REFERENCES players (id)
-        )
-    ''')
-    
-    db.commit()
-    db.close()
-
-@app.before_request
-def before_request():
-    """Initialize database on first request"""
-    if not app.config['DATABASE_PATH'].exists():
-        init_db()
 
 @app.route('/')
 def index():
     """Main game interface"""
     return render_template('index.html')
 
-@app.route('/health')
-def health():
-    """Health check endpoint for monitoring"""
+@app.route('/api/game/new', methods=['POST'])
+def new_game():
+    """Start a new game"""
+    game_state = GameEngine.new_game()
+    session['game_state'] = game_state
+    
     return jsonify({
-        'status': 'healthy',
-        'environment': app.config['FLASK_ENV']
+        'output': '🎮 Welcome to OnlyDungeons!\n\nYou stand at the threshold of the forgotten dungeon, a labyrinth of peril and mystery. Whispers speak of untold treasures guarded by ancient foes.\n\nType "look" to examine your surroundings or "help" for commands.',
+        'player': game_state['player'],
+        'room': game_state['current_room'],
+        'round': f"{game_state['round_number']}/{game_state['total_rounds']}"
     })
 
 @app.route('/api/game/command', methods=['POST'])
 def game_command():
-    """Handle game commands"""
+    """Process game command"""
     data = request.get_json()
-    command = data.get('command', '').lower().strip()
+    command = data.get('command', '').strip()
     
-    # TODO: Integrate with your game engine
-    # from game.engine import process_command
-    # response = process_command(command, session)
+    # Get game state from session
+    game_state = session.get('game_state')
+    if not game_state:
+        return jsonify({
+            'output': '⚠️ No active game. Type "new" to start a new game.',
+            'error': True
+        })
     
-    # Placeholder response
+    # Process command
+    result = GameEngine.process_command(command, game_state)
+    
+    # Update session
+    session['game_state'] = result['state']
+    session.modified = True
+    
+    # Prepare response
     response = {
-        'output': f'You entered: {command}',
-        'room': 'Starting Room',
-        'health': 100,
-        'inventory': []
+        'output': result['output'],
+        'player': result['state']['player'],
+        'room': result['state']['current_room'],
+        'round': f"{result['state']['round_number']}/{result['state']['total_rounds']}",
+        'game_over': result['state'].get('game_over', False),
+        'victory': result['state'].get('victory', False)
     }
     
     return jsonify(response)
+
+@app.route('/health')
+def health():
+    """Health check endpoint"""
+    return jsonify({'status': 'healthy', 'game': 'OnlyDungeons'})
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

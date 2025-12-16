@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OnlyDungeons</title>
+    <style>
+        body {
+            background: #000;
+            color: #0f0;
+            font-family: 'Courier New', monospace;
+            padding: 20px;
+        }
+        .terminal {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        #output {
+            min-height: 400px;
+            margin-bottom: 20px;
+            white-space: pre-wrap;
+        }
+        input {
+            background: #000;
+            color: #0f0;
+            border: 1px solid #0f0;
+            padding: 10px;
+            width: 100%;
+            font-family: 'Courier New', monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="terminal">
+        <h1>OnlyDungeons</h1>
+        <div id="output">Welcome to OnlyDungeons!
+Type 'help' for commands.
+> </div>
+        <input type="text" id="input" autofocus>
+    </div>
+
+    <script>
+        const input = document.getElementById('input');
+        const output = document.getElementById('output');
+
+        input.addEventListener('keypress', async (e) => {
+            if (e.key === 'Enter') {
+                const command = input.value;
+                output.textContent += command + '\n';
+                input.value = '';
+
+                const response = await fetch('/api/game/command', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({command})
+                });
+
+                const data = await response.json();
+                output.textContent += data.output + '\n> ';
+                output.scrollTop = output.scrollHeight;
+            }
+        });
+    </script>
+</body>
+</html>
