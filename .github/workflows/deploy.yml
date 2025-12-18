@@ -7,45 +7,31 @@ on:
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest
-
+    runs-on: self-hosted
+    
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-
-    - name: Deploy to Raspberry Pi
-      uses: appleboy/ssh-action@master
-      with:
-        host: ${{ secrets.PI_HOST }}
-        username: nigil
-        port: 2044
-        key: ${{ secrets.PI_SSH_KEY }}
-        script: |
-          cd /opt/dailydungeon
-          git pull origin master
-          source venv/bin/activate
-          pip install -r requirements.txt
-          deactivate
-          sudo systemctl restart dailydungeon
-
+      
+    - name: Deploy
+      run: |
+        cd /opt/dailydungeon
+        git pull origin master
+        source venv/bin/activate
+        pip install -r requirements.txt
+        deactivate
+        sudo systemctl restart dailydungeon
+        
     - name: Verify deployment
-      uses: appleboy/ssh-action@master
-      with:
-        host: ${{ secrets.PI_HOST }}
-        username: nigil
-        port: 2044
-        key: ${{ secrets.PI_SSH_KEY }}
-        script: |
-          sleep 3
-          systemctl is-active dailydungeon || exit 1
-          curl -f http://localhost:5000/health || exit 1
-
+      run: |
+        sleep 3
+        systemctl is-active dailydungeon || exit 1
+        curl -f http://localhost:5000/health || exit 1
+        
     - name: Notify success
       if: success()
-      run: echo "✅ Great Success! Live at https://coldharbor.app"
-
+      run: echo "✅ Great success! Live at https://dailydungeon.coldharbor.app"
+      
     - name: Notify failure
       if: failure()
-      run: |
-        echo "❌ Deployment failed!"
-        exit 1
+      run: echo "❌ Deployment failed!"
