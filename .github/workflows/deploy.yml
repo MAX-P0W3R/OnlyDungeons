@@ -1,9 +1,8 @@
-# .github/workflows/deploy.yml
 name: Deploy to Raspberry Pi
 
 on:
   push:
-    branches: [ main ]
+    branches: [ master ]
   workflow_dispatch:
 
 jobs:
@@ -18,27 +17,33 @@ jobs:
       uses: appleboy/ssh-action@master
       with:
         host: ${{ secrets.PI_HOST }}
-        username: pi
+        username: nigil
         key: ${{ secrets.PI_SSH_KEY }}
         script: |
           cd /opt/dailydungeon
-          export COMMIT_SHA=${{ github.sha }}
-          ./deploy.sh
+          git pull origin master
+          source venv/bin/activate
+          pip install -r requirements.txt
+          deactivate
+          sudo systemctl restart dailydungeon
           
-    - name: Check deployment status
+    - name: Verify deployment
       uses: appleboy/ssh-action@master
       with:
         host: ${{ secrets.PI_HOST }}
         username: nigil
         key: ${{ secrets.PI_SSH_KEY }}
         script: |
-          systemctl is-active dailydungeon
+          sleep 3
+          systemctl is-active dailydungeon || exit 1
           curl -f http://localhost:5000/health || exit 1
           
-    - name: Notify on success
+    - name: Notify success
       if: success()
-      run: echo "✅ Deployment successful!"
+      run: echo "✅ Deployment successful! Live at https://coldharbor.app"
       
-    - name: Notify on failure
+    - name: Notify failure
       if: failure()
-      run: echo "❌ Deployment failed!"
+      run: |
+        echo "❌ Deployment failed!"
+        exit 1
