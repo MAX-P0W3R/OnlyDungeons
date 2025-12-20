@@ -8,6 +8,11 @@ class GameEngine:
     def roll_d6():
         """Simulate a D6 roll"""
         return random.randint(1, 6)
+
+    @staticmethod
+    def roll_d20():
+        """Simulate a D20 roll"""
+        return random.randint(1,20)
     
     @staticmethod
     def new_game():
@@ -43,10 +48,12 @@ class GameEngine:
             return GameEngine._get(params, state)
         elif action in ['inventory', 'i']:
             return GameEngine._inventory(state)
-        elif action == 'roll':
+        elif action in ['roll', 'r']:
             return GameEngine._roll(state)
-        elif action == 'help':
+        elif action in ['help', 'h']:
             return GameEngine._help(state)
+        elif action in ['exit', 'quit', 'q']:
+            return GameEngine._exit(state)
         else:
             return {'output': "Invalid command. Type 'help' for available commands.", 'state': state}
     
@@ -111,12 +118,12 @@ class GameEngine:
         current_room = state['current_room']
         enemy = state['rooms'][current_room]['Enemy']
         
-        combat_log = [f"⚔️ Combat with {enemy['Name']}!"]
+        combat_log = [f"Combat with {enemy['Name']}!"]
         combat_log.append(f"You: {player.health} HP / {player.strength} STR | {enemy['Name']}: {enemy['Health']} HP / {enemy['Strength']} STR\n")
         
         # Initiative
-        player_init = GameEngine.roll_d6()
-        enemy_init = GameEngine.roll_d6()
+        player_init = GameEngine.roll_d20()
+        enemy_init = GameEngine.roll_d20()
         combat_log.append(f"Initiative - You: {player_init} | Enemy: {enemy_init}")
         
         player_turn = player_init >= enemy_init
@@ -143,25 +150,25 @@ class GameEngine:
                     # Rewards
                     if enemy.get('IsFinalBoss', False):
                         player.gold += 3
-                        combat_log.append("🏆 Final boss defeated! You earn 3 gold!")
+                        combat_log.append("Final boss defeated! You earn 3 gold!")
                         state['victory'] = True
                         state['game_over'] = True
                     else:
                         player.gold += 1
-                        combat_log.append("💰 You earn 1 gold!")
+                        combat_log.append("You earn 1 gold!")
                     
                     # Check for key
                     if enemy.get('HasKey', False):
                         player.has_key = True
                         player.inventory.append("Dungeon Key")
-                        combat_log.append("🔑 You found a key! This unlocks the final boss room.")
+                        combat_log.append("You found a key! You will need this to unlock the final boss room.")
                     
                     # Collect item
                     if 'Item' in state['rooms'][current_room]:
                         item = state['rooms'][current_room]['Item']
                         if item not in player.inventory:
                             player.inventory.append(item)
-                            combat_log.append(f"📦 You collected the {item}!")
+                            combat_log.append(f"You collected the {item}!")
                     
                     # Remove enemy
                     del state['rooms'][current_room]['Enemy']
@@ -236,11 +243,20 @@ class GameEngine:
     def _help(state):
         """Show help"""
         help_text = """Available Commands:
-- look (l) - Examine your current room
-- go [direction] - Move (north, south, east, west)
-- attack - Fight an enemy in the room
-- get [item] - Pick up an item
-- inventory (i) - Check your items
-- roll - Roll some dice
-- help - Show this message"""
+- LOOK (l) - Examine your current room
+- GO [direction] - Move (north, south, east, west)
+- ATTACK (a) - Fight an enemy in the room
+- GET [item] - Pick up an item
+- INVENTORY (i) - Check your items
+- ROLL (r)- Roll some dice
+- CLEAR - Clear the screen
+- HELP (h) - Show this message
+- EXIT or QUIT (q) - Leave the game
+=== Commands are not case sensitive. Letter in '()' is shortcut. ==="""
         return {'output': help_text, 'state': state}
+    
+    @staticmethod
+    def _exit(state):
+        """Exit the game"""
+        state['game_over'] = True
+        return {'output': "Thanks for playing! Game exited.", 'state': state}

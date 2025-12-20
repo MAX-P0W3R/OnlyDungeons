@@ -3,17 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OnlyDungeons - A Text Adventure</title>
+    <title>DailyDungeon</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/terminal.css') }}">
 </head>
 <body>
     <div class="terminal-container">
         <div class="terminal-header">
             <div class="header-left">
-                <span class="terminal-title">🏰 DAILYDUNGEON</span>
+                <span class="terminal-title">DAILYDUNGEON v1.0</span>
             </div>
             <div class="header-right">
-                <span id="health-display">❤️ HP: <span id="health">--</span></span>
+                <span id="health-display">Health: <span id="health">--</span></span>
+                <span id="health-display">Strength: <span id="strength">--</span></span>
                 <span id="gold-display">💰 Gold: <span id="gold">--</span></span>
                 <span id="round-display">🎲 Round: <span id="round">--</span></span>
             </div>
@@ -22,7 +23,7 @@
         <div id="terminal-output" class="terminal-output">
             <div class="boot-sequence">
                 <p>═══════════════════════════════════════════════════════════</p>
-                <p>          WELCOME TO THE DAILYDUNGEON v1.0</p>
+                <p>          WELCOME TO THE DAILYDUNGEON</p>
                 <p>          A Text-Based Dungeon Adventure</p>
                 <p>═══════════════════════════════════════════════════════════</p>
                 <p>&nbsp;</p>
@@ -50,7 +51,8 @@
         </div>
         
         <div class="status-bar">
-            <span id="room-display">Room: <span id="current-room">--</span></span>
+            <span id="room-display">Current Room: <span id="current-room">--</span></span>
+            <span> | </span>
             <span id="inventory-display">Inventory: <span id="inventory">Empty</span></span>
         </div>
     </div>
@@ -59,6 +61,7 @@
         const output = document.getElementById('terminal-output');
         const input = document.getElementById('command-input');
         const healthSpan = document.getElementById('health');
+        const strengthSpan = document.getElementById('strength');
         const goldSpan = document.getElementById('gold');
         const roundSpan = document.getElementById('round');
         const roomSpan = document.getElementById('current-room');
