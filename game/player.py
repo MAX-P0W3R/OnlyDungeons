@@ -8,6 +8,8 @@ class Player:
     gold: int
     inventory: List[str]
     has_key: bool = False
+    stealth: int = 5  # New stat, default 5
+    successful_steals: int = 0  # Track for scoring later
     
     def to_dict(self):
         return asdict(self)

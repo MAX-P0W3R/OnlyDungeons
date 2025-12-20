@@ -1,7 +1,8 @@
 import random
-from typing import Dict, Tuple
+from typing import Dict
 from game.player import Player
 from game.world import initialize_rooms, get_available_exits, describe_room
+from game.wargames import WarGames
 
 class GameEngine:
     @staticmethod
@@ -46,10 +47,14 @@ class GameEngine:
             return GameEngine._attack(state)
         elif action in ['get', 'take']:
             return GameEngine._get(params, state)
+        elif action in ['steal', 's']:
+            return GameEngine._steal(state)    
         elif action in ['inventory', 'i']:
             return GameEngine._inventory(state)
         elif action in ['roll', 'r']:
             return GameEngine._roll(state)
+        elif action in ['wargames', 'thermonuclearwar', 'war']:
+            return GameEngine._wargames(state)
         elif action in ['help', 'h']:
             return GameEngine._help(state)
         elif action in ['exit', 'quit', 'q']:
@@ -112,7 +117,7 @@ class GameEngine:
         return result
     
     @staticmethod
-    def _combat(state):
+    def _combat(state, enemy_initiative=False):
         """Handle combat between player and enemy"""
         player = Player.from_dict(state['player'])
         current_room = state['current_room']
@@ -121,16 +126,20 @@ class GameEngine:
         combat_log = [f"Combat with {enemy['Name']}!"]
         combat_log.append(f"You: {player.health} HP / {player.strength} STR | {enemy['Name']}: {enemy['Health']} HP / {enemy['Strength']} STR\n")
         
-        # Initiative
-        player_init = GameEngine.roll_d20()
-        enemy_init = GameEngine.roll_d20()
-        combat_log.append(f"Initiative - You: {player_init} | Enemy: {enemy_init}")
-        
-        player_turn = player_init >= enemy_init
-        if player_turn:
-            combat_log.append("You strike first!\n")
+        # Initiative (unless enemy already has it from failed steal)
+        if enemy_initiative:
+            player_turn = False
+            combat_log.append("The enemy strikes first (caught stealing)!\n")
         else:
-            combat_log.append("The enemy strikes first!\n")
+            player_init = GameEngine.roll_d20()
+            enemy_init = GameEngine.roll_d20()
+            combat_log.append(f"Initiative - You: {player_init} | Enemy: {enemy_init}")
+            
+            player_turn = player_init >= enemy_init
+            if player_turn:
+                combat_log.append("You strike first!\n")
+            else:
+                combat_log.append("The enemy strikes first!\n")
         
         # Combat loop
         round_num = 1
@@ -224,6 +233,69 @@ class GameEngine:
         return {'output': f"✅ {item} retrieved!", 'state': state}
     
     @staticmethod
+    def _steal(state):
+        """Attempt to steal from an enemy"""
+        current_room = state['current_room']
+        room_data = state['rooms'][current_room]
+        
+        if 'Enemy' not in room_data:
+            return {'output': "There's no enemy here to steal from.", 'state': state}
+        
+        enemy = room_data['Enemy']
+        
+        # Block stealing from final boss
+        if enemy.get('IsFinalBoss', False):
+            return {'output': "You cannot steal from the final boss! You must face it in combat.", 'state': state}
+        
+        player = Player.from_dict(state['player'])
+        
+        # Stealth check: D20 + stealth modifier vs DC 12
+        stealth_roll = GameEngine.roll_d20()
+        stealth_check = stealth_roll + player.stealth
+        dc = 12
+        
+        combat_log = [f"Attempting to steal from {enemy['Name']}..."]
+        combat_log.append(f"You roll {stealth_roll} + {player.stealth} stealth = {stealth_check} vs DC {dc}")
+        
+        if stealth_check >= dc:
+            # Success!
+            combat_log.append(f"✅ Success! You stealthily steal from {enemy['Name']}!")
+            
+            # Steal gold (1 gold like defeating them)
+            player.gold += 1
+            player.successful_steals += 1
+            combat_log.append("You earn 1 gold!")
+            
+            # Check for key
+            if enemy.get('HasKey', False):
+                player.has_key = True
+                player.inventory.append("Dungeon Key")
+                combat_log.append("You found a key!")
+            
+            # Collect item if present
+            if 'Item' in room_data:
+                item = room_data['Item']
+                if item not in player.inventory:
+                    player.inventory.append(item)
+                    combat_log.append(f"You collected the {item}!")
+            
+            # Remove enemy (successful steal means they don't notice)
+            del state['rooms'][current_room]['Enemy']
+            state['player'] = player.to_dict()
+            state['round_number'] += 1
+            
+            return {'output': '\n'.join(combat_log), 'state': state}
+        else:
+            # Failure - combat starts with enemy initiative
+            combat_log.append(f"❌ Failure! {enemy['Name']} notices you!")
+            combat_log.append("The enemy gets initiative and attacks immediately!")
+            
+            # Trigger combat with enemy going first
+            result = GameEngine._combat(state, enemy_initiative=True)
+            state['round_number'] += 1
+            return result
+
+    @staticmethod
     def _inventory(state):
         """Check inventory"""
         player = Player.from_dict(state['player'])
@@ -246,6 +318,7 @@ class GameEngine:
 - LOOK (l) - Examine your current room
 - GO [direction] - Move (north, south, east, west)
 - ATTACK (a) - Fight an enemy in the room
+- STEAL (s) - Attempt to steal from an enemy (risky!)
 - GET [item] - Pick up an item
 - INVENTORY (i) - Check your items
 - ROLL (r)- Roll some dice
@@ -254,6 +327,12 @@ class GameEngine:
 - EXIT or QUIT (q) - Leave the game
 === Commands are not case sensitive. Letter in '()' is shortcut. ==="""
         return {'output': help_text, 'state': state}
+    
+    @staticmethod
+    def _wargames(state):
+        """Launch WarGames easter egg"""
+        output = WarGames.play()
+        return {'output': output, 'state': state}
     
     @staticmethod
     def _exit(state):

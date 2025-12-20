@@ -83,6 +83,7 @@
         function updateUI(data) {
             if (data.player) {
                 healthSpan.textContent = data.player.health;
+                strengthSpan.textContent = data.player.strength;
                 goldSpan.textContent = data.player.gold;
                 
                 if (data.player.inventory && data.player.inventory.length > 0) {
