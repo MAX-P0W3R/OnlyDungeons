@@ -22,7 +22,7 @@ def new_game():
     session['game_state'] = game_state
     
     return jsonify({
-        'output': '🎮 Welcome to OnlyDungeons!\n\nYou stand at the threshold of the forgotten dungeon, a labyrinth of peril and mystery. Whispers speak of untold treasures guarded by ancient foes.\n\nType "look" to examine your surroundings or "help" for commands.',
+        'output': 'Welcome to the DailyDungeon!\n\nYou stand at the threshold of the forgotten dungeon, a labyrinth of peril and mystery. Whispers speak of untold treasures guarded by ancient foes.\n\nType "look" to examine your surroundings or "help" for commands.',
         'player': game_state['player'],
         'room': game_state['current_room'],
         'round': f"{game_state['round_number']}/{game_state['total_rounds']}"
