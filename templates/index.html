@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DailyDungeon</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/terminal.css') }}">
 </head>
+
 <body>
     <div class="terminal-container">
         <div class="terminal-header">
@@ -19,12 +21,12 @@
                 <span id="round-display">Round: <span id="round">--</span></span>
             </div>
         </div>
-        
+
         <div id="terminal-output" class="terminal-output">
             <div class="boot-sequence">
                 <p>═══════════════════════════════════════════════════════════</p>
-                <p>          WELCOME TO THE DAILYDUNGEON</p>
-                <p>          A Text-Based Dungeon Adventure</p>
+                <p> WELCOME TO THE DAILYDUNGEON</p>
+                <p> A Text-Based Dungeon Adventure</p>
                 <p>═══════════════════════════════════════════════════════════</p>
                 <p>&nbsp;</p>
                 <p>Loading dungeon data...</p>
@@ -38,19 +40,13 @@
                 <p>Type <span class="highlight">'HELP'</span> For available commands.</p>
             </div>
         </div>
-        
+
         <div class="terminal-input-container">
             <span class="prompt">&gt;</span>
-            <input 
-                type="text" 
-                id="command-input" 
-                class="terminal-input" 
-                autocomplete="off"
-                autofocus
-                placeholder="Enter command..."
-            >
+            <input type="text" id="command-input" class="terminal-input" autocomplete="off" autofocus
+                placeholder="Enter command...">
         </div>
-        
+
         <div class="status-bar">
             <span id="room-display">Current Room: <span id="current-room">--</span></span>
             <span> | </span>
@@ -67,9 +63,9 @@
         const roundSpan = document.getElementById('round');
         const roomSpan = document.getElementById('current-room');
         const inventorySpan = document.getElementById('inventory');
-        
+
         let gameActive = false;
-        
+
         function appendOutput(text, className = 'output-line') {
             const lines = text.split('\n');
             lines.forEach(line => {
@@ -80,51 +76,56 @@
             });
             output.scrollTop = output.scrollHeight;
         }
-        
+
         function updateUI(data) {
             if (data.player) {
-                healthSpan.textContent = data.player.health;
-                strengthSpan.textContent = data.player.strength;
-                goldSpan.textContent = data.player.gold;
-                
-                if (data.player.inventory && data.player.inventory.length > 0) {
+                // Safe check for basic stats
+                healthSpan.textContent = data.player.health || '--';
+                strengthSpan.textContent = data.player.strength || '--';
+                goldSpan.textContent = data.player.gold || '0';
+
+                // SAFE CHECK FOR INVENTORY
+                // We check if inventory exists BEFORE looking at .length
+                if (data.player.inventory && Array.isArray(data.player.inventory) && data.player.inventory.length > 0) {
                     inventorySpan.textContent = data.player.inventory.join(', ');
-                } else {
+                } else if (data.player.inventory) {
                     inventorySpan.textContent = 'Empty';
                 }
+                // If data.player.inventory is missing entirely (like during the map command), 
+                // we just leave the current display alone.
             }
-            
+
             if (data.round) {
                 roundSpan.textContent = data.round;
             }
-            
+
             if (data.room) {
                 roomSpan.textContent = data.room;
             }
         }
-        
+
         async function startNewGame() {
             try {
                 const response = await fetch('/api/game/new', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' }
                 });
-                
+
                 const data = await response.json();
-                
+
                 // Clear output except boot sequence
                 output.innerHTML = '';
-                
+
                 appendOutput(data.output, 'game-text');
                 appendOutput(''); // Empty line
                 updateUI(data);
                 gameActive = true;
-                
+
             } catch (error) {
                 appendOutput('❌ Error starting game: ' + error.message, 'error-text');
             }
         }
-        
+
         async function sendCommand(command) {
             try {
                 const response = await fetch('/api/game/command', {
@@ -132,16 +133,25 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ command })
                 });
-                
+
                 const data = await response.json();
-                
+
+                // --- START NEW MAP LOGIC ---
+                if (data.command === 'show_map') {
+                    const mapHud = document.getElementById('map-hud');
+                    if (mapHud) {
+                        mapHud.classList.add('active');
+                    }
+                }
+                // --- END NEW MAP LOGIC ---
+
                 // Display response
                 appendOutput(data.output, data.error ? 'error-text' : 'game-text');
                 appendOutput(''); // Empty line
-                
+
                 // Update UI
                 updateUI(data);
-                
+
                 // Check for game over
                 if (data.game_over) {
                     if (data.victory) {
@@ -157,40 +167,40 @@
                     appendOutput("Type 'new' to start a new game");
                     gameActive = false;
                 }
-                
+
             } catch (error) {
                 appendOutput('❌ Error: ' + error.message, 'error-text');
             }
         }
-        
-        input.addEventListener('keypress', function(e) {
+
+        input.addEventListener('keypress', function (e) {
             if (e.key === 'Enter') {
-                const command = this.value.trim();
+                // .toLowerCase() here handles 'Map', 'MAP', or 'mAp'
+                const command = this.value.trim().toLowerCase();
                 if (!command) return;
-                
-                // Echo command
-                appendOutput('> ' + command, 'user-command');
+
+                // Echo the original typed command so the user sees what they did
+                appendOutput('> ' + this.value, 'user-command');
                 this.value = '';
-                
-                // Handle special commands
-                if (command.toLowerCase() === 'new') {
+
+                if (command === 'new') {
                     startNewGame();
-                } else if (command.toLowerCase() === 'clear') {
+                } else if (command === 'clear') {
                     output.innerHTML = '';
                 } else {
-                    sendCommand(command);
+                    sendCommand(command); // This now sends only lowercase
                 }
             }
         });
-        
+
         // Keep input focused
         document.addEventListener('click', () => input.focus());
-        
+
         // Command history
         let commandHistory = [];
         let historyIndex = -1;
-        
-        input.addEventListener('keydown', function(e) {
+
+        input.addEventListener('keydown', function (e) {
             if (e.key === 'ArrowUp') {
                 e.preventDefault();
                 if (historyIndex < commandHistory.length - 1) {
@@ -212,5 +222,74 @@
             }
         });
     </script>
+
+    <div id="map-hud" class="map-overlay" onclick="this.classList.remove('active')">
+        <div class="hud-header">--- SATELLITE UPLINK ACTIVE // TAP TO EXIT ---</div>
+        <div class="map-frame">
+            <img src="{{ url_for('static', filename='Map-001.png') }}" alt="Dungeon Map">
+            <div class="scanlines"></div>
+        </div>
+    </div>
+
+    <style>
+        .map-overlay {
+            display: none;
+            /* Important: start hidden */
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 10, 0, 0.98);
+            z-index: 99999;
+            /* Higher than terminal */
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        /* This class is added by JS */
+        .map-overlay.active {
+            display: flex !important;
+        }
+
+        .map-frame {
+            position: relative;
+            max-width: 95%;
+            max-height: 85%;
+            border: 2px solid #00ff00;
+            box-shadow: 0 0 20px #00ff00;
+            background: #000;
+        }
+
+        .map-frame img {
+            display: block;
+            max-width: 100%;
+            height: auto;
+            /* Green Tint */
+            filter: grayscale(1) sepia(100%) hue-rotate(90deg) brightness(1.1) contrast(1.3);
+        }
+
+        .hud-header {
+            color: #00ff00;
+            font-family: 'Courier New', monospace;
+            margin-bottom: 10px;
+            text-shadow: 0 0 5px #00ff00;
+            font-size: 14px;
+        }
+
+        .scanlines {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%);
+            background-size: 100% 4px;
+            pointer-events: none;
+        }
+    </style>
 </body>
+
 </html>

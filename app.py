@@ -32,7 +32,7 @@ def new_game():
 def game_command():
     """Process game command"""
     data = request.get_json()
-    command = data.get('command', '').strip()
+    command = data.get('command', '').strip().lower()
     
     # Get game state from session
     game_state = session.get('game_state')
@@ -40,6 +40,16 @@ def game_command():
         return jsonify({
             'output': '⚠️ No active game. Type "new" to start a new game.',
             'error': True
+        })
+
+# --- NEW MAP INTERCEPTION ---
+    if command == "map":
+        return jsonify({
+            'output': '🗺️ You unfurl the ancient map...',
+            'command': 'show_map', # Flag for index.html
+            'player': game_state['player'],
+            'room': game_state['current_room'],
+            'round': f"{game_state['round_number']}/{game_state['total_rounds']}"
         })
     
     # Process command
